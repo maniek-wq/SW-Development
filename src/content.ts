@@ -1,4 +1,7 @@
 import jakubPhoto from './img/jakub-wasilewski.jpg'
+import shotClinic from './img/clinic-calendar.jpg'
+import shotTraining from './img/training-reports.jpg'
+import shotGame from './img/party-game.jpg'
 
 export type Lang = 'pl' | 'en'
 export type LS = Record<Lang, string>
@@ -7,10 +10,16 @@ export type LS = Record<Lang, string>
 
 export type Project = {
   id: string
-  name: string
+  name: LS
   category: 'web' | 'mobile' | 'commerce' | 'landing'
   year: string
+  /** Empty for projects whose preview is blocked; the card draws a locked cover. */
   image: string
+  /**
+   * 'private' hides the preview entirely, 'ongoing' marks work still in flight,
+   * 'forSale' marks a finished product we can deploy for another client.
+   */
+  status?: 'private' | 'ongoing' | 'forSale'
   color: string
   tagline: LS
   role: LS
@@ -34,149 +43,234 @@ const img = (id: string, w = 900, h = 640) =>
 
 export const projects: Project[] = [
   {
-    id: 'halo',
-    name: 'Halo Analytics',
+    id: 'dls',
+    name: { pl: 'System grafikowy DLS', en: 'DLS scheduling system' },
     category: 'web',
-    year: '2025',
-    image: img('1551288049-bebda4e38f71'),
-    color: '#4f46e5',
+    year: '2026',
+    image: '',
+    color: '#334155',
+    status: 'private',
     tagline: {
-      pl: 'Pulpit analityczny SaaS dla zespołów produktowych.',
-      en: 'A SaaS analytics dashboard for product teams.',
+      pl: 'Grafik pracy i flota pojazdów w jednym systemie, pisanym pod reguły firmy.',
+      en: 'Staff scheduling and vehicle fleet in one system, built around a company’s rules.',
     },
-    role: { pl: 'Projekt i front-end', en: 'Design & front-end' },
-    stack: ['React', 'TypeScript', 'Tailwind', 'Recharts'],
+    role: { pl: 'Analiza, backend i frontend', en: 'Analysis, backend & front-end' },
+    stack: ['Angular 18', 'Tailwind CSS', 'Node + Express', 'MongoDB / Mongoose', 'Socket.IO', 'JWT', 'Playwright'],
     highlights: [
       {
-        pl: 'Interaktywny onboarding ze „spotlight” samouczkiem prowadzącym po funkcjach.',
-        en: 'Interactive onboarding with a spotlight tour guiding through features.',
+        pl: 'Układanie grafiku na podstawie dyspozycyjności zgłaszanej przez pracowników, z ewidencją godzin i nieobecności.',
+        en: 'Schedules built from availability submitted by staff, with hours and absences tracked alongside.',
       },
       {
-        pl: 'Widoki tabelaryczne renderujące 50k wierszy bez zacięć dzięki wirtualizacji.',
-        en: 'Table views rendering 50k rows smoothly via virtualization.',
+        pl: 'Ewidencja floty: przypisania pojazdów, pojazdy rezerwowe, warsztat i statusy dzienne.',
+        en: 'Fleet register: vehicle assignments, reserve vehicles, workshop flow and daily statuses.',
       },
-      { pl: 'W pełni dostępny — WCAG AA, obsługa klawiatury.', en: 'Fully accessible — WCAG AA, keyboard support.' },
+      {
+        pl: 'Aplikacja mobile-first z komunikacją w czasie rzeczywistym i uprawnieniami rozdzielonymi per rola.',
+        en: 'A mobile-first app with real-time updates and permissions split per role.',
+      },
     ],
     about: {
-      pl: 'Celem było uprościć wdrożenie nowych użytkowników do złożonego narzędzia analitycznego. Zaprojektowaliśmy system komponentów i dopięliśmy wydajność, aby ciężkie widoki działały płynnie także na słabszym sprzęcie.',
-      en: 'The goal was to simplify onboarding into a complex analytics tool. We designed the component system and tuned performance so heavy views stay smooth even on modest hardware.',
+      pl: 'Wewnętrzny system dla firmy transportowej, w którym grafik pracy i zarządzanie flotą są jednym procesem, a nie dwoma osobnymi narzędziami. Zamiast uniwersalnego kalendarza aplikacja odwzorowuje reguły tej konkretnej firmy: sposób zbierania dyspozycyjności, zasady przydziału pojazdów, obieg zgłoszeń warsztatowych i rozliczanie czasu pracy. Projekt prywatny — podgląd i repozytorium pozostają niedostępne.',
+      en: 'An internal system for a transport company where staffing and fleet management are one process rather than two separate tools. Instead of a generic calendar, the app encodes this company’s own rules: how availability is collected, how vehicles are assigned, how workshop tickets travel and how working time is settled. A private project — preview and repository stay closed.',
     },
-    liveUrl: 'https://example.com/halo',
-    repoUrl: 'https://github.com/example/halo'
   },
   {
-    id: 'fjord',
-    name: 'Fjord',
+    id: 'clinic-calendar',
+    name: { pl: 'Kalendarz gabinetu', en: 'Clinic calendar' },
     category: 'mobile',
-    year: '2024',
-    image: img('1627542557169-5ed71c66ed85'),
+    year: '2026',
+    image: shotClinic,
+    color: '#4f46e5',
+    status: 'forSale',
+    tagline: {
+      pl: 'PWA prowadząca cały gabinet: rezerwacje, karnety, kartoteka i rozliczenia.',
+      en: 'A PWA running a whole clinic: bookings, passes, client records and billing.',
+    },
+    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
+    stack: ['React 18 + Vite', 'TypeScript', 'Supabase / PostgreSQL', 'Row Level Security', 'TanStack Query', 'Edge Functions (Deno)', 'Web Push', 'pgTAP', 'Vitest'],
+    highlights: [
+      {
+        pl: 'Podwójna rezerwacja jest niemożliwa dzięki wykluczającemu indeksowi w bazie — nie ma wyścigu, który da się przegrać po stronie klienta.',
+        en: 'Double booking is impossible thanks to an exclusion index in the database — there is no race the client could lose.',
+      },
+      {
+        pl: 'Statystyki i rozliczenia liczone funkcjami SQL, więc liczba na ekranie i liczba w raporcie nie mogą się rozjechać.',
+        en: 'Statistics and settlements are computed by SQL functions, so the number on screen and the number in the report cannot drift apart.',
+      },
+      {
+        pl: 'Autoryzacja egzekwowana przez bazę (RLS na każdej tabeli), z osobną bramką na raporty finansowe i testami polityk w pgTAP.',
+        en: 'Authorization enforced by the database (RLS on every table), with a separate gate on financial reports and policies tested in pgTAP.',
+      },
+    ],
+    about: {
+      pl: 'Odpowiednik kalendarza chmurowego, ale z regułami napisanymi pod konkretny model działania gabinetu — i to te reguły są treścią projektu. Serie cykliczne, karnety z rozliczaniem zużycia, rozliczenia z firmą jako płatnikiem oraz przypomnienia push wysyłane funkcją brzegową. Schemat rozwijany przyrostowo przez 39 wersjonowanych migracji, a typy TypeScript generowane wprost z bazy, więc kontrakt między bazą a frontendem sprawdza kompilator.',
+      en: 'A cloud-calendar equivalent, except the rules are written for one clinic’s way of working — and those rules are the substance of the project. Recurring series, passes with usage settlement, company-as-payer billing and push reminders sent from an edge function. The schema grew across 39 versioned migrations, with TypeScript types generated straight from the database, so the contract between database and front-end is checked by the compiler.',
+    },
+  },
+  {
+    id: 'training-reports',
+    name: { pl: 'Generator raportów treningowych', en: 'Training report generator' },
+    category: 'web',
+    year: '2026',
+    image: shotTraining,
+    color: '#0891b2',
+    status: 'forSale',
+    tagline: {
+      pl: 'Surowy eksport z systemu pomiarowego wchodzi, gotowy raport A4 wychodzi.',
+      en: 'A raw export from the tracking system goes in, a finished A4 report comes out.',
+    },
+    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
+    stack: ['React 19 + Vite', 'TypeScript', 'Supabase / PostgreSQL', 'Row Level Security', 'pdf.js', 'SheetJS', 'Vitest'],
+    highlights: [
+      {
+        pl: 'Dwa niezależne formaty wejściowe: arkusz z systemu pomiarowego oraz tabela odczytywana z gotowego PDF-a po współrzędnych tekstu.',
+        en: 'Two independent input formats: a sheet from the tracking system and a table read out of a finished PDF by text coordinates.',
+      },
+      {
+        pl: 'Dopasowywanie nazwisk między źródłami kaskadą metod, z oceną pewności i stanem „niejednoznaczne”, który oddaje decyzję człowiekowi zamiast zgadywać.',
+        en: 'Name matching across sources through a cascade of methods, with a confidence score and an “ambiguous” state that hands the decision to a person instead of guessing.',
+      },
+      {
+        pl: '532 testy na czystych funkcjach — przy narzędziu analitycznym błąd nie objawia się awarią, tylko cichą, wiarygodnie wyglądającą liczbą.',
+        en: '532 tests over pure functions — in an analytics tool a bug does not show up as a crash but as a quiet, plausible-looking number.',
+      },
+    ],
+    about: {
+      pl: 'Narzędzie dla trenerów przygotowania motorycznego, które zastępuje raport składany wcześniej ręcznie w arkuszu. Obsługuje raport dzienny, tygodniowy, zestawienie kilku raportów, porównanie okresów i kartę zawodnika. Dokument jest tu danymi, nie widokiem: kartki mają trwałe identyfikatory, więc można je usuwać, przywracać i przestawiać przeciąganiem, a zapis odtwarza dokładnie ten układ. Wykresy rysowane własnym kodem SVG, żeby dokument wyglądał identycznie na ekranie i w druku.',
+      en: 'A tool for strength and conditioning coaches, replacing a report previously assembled by hand in a spreadsheet. It covers daily and weekly reports, multi-report roll-ups, period comparisons and single-athlete cards. The document is data here, not a view: pages carry durable identifiers, so they can be removed, restored and reordered by dragging, and saving restores exactly that layout. Charts are drawn in hand-written SVG so the document looks identical on screen and in print.',
+    },
+  },
+  {
+    id: 'party-game',
+    name: { pl: 'Gra towarzyska online', en: 'Online party game' },
+    category: 'web',
+    year: '2026',
+    image: shotGame,
+    color: '#e11d48',
+    status: 'forSale',
+    tagline: {
+      pl: 'Wieloosobowa gra przeglądarkowa typu „kto jest oszustem”, sześć trybów rozgrywki.',
+      en: 'A browser party game of “spot the impostor”, with six game modes.',
+    },
+    role: { pl: 'Serwer gry i interfejs', en: 'Game server & interface' },
+    stack: ['React + TypeScript', 'Node + Express', 'Socket.IO', 'Redis', 'JWT + bcrypt', 'i18n'],
+    highlights: [
+      {
+        pl: 'Serwer jest jedynym źródłem prawdy, a każdy gracz dostaje własny widok stanu — sekret nie trafia do przeglądarki kogoś, kto nie ma prawa go znać.',
+        en: 'The server is the only source of truth and every player gets their own view of state — the secret never reaches a browser with no right to it.',
+      },
+      {
+        pl: 'Zegary tury po stronie serwera z marginesem tolerancji, żeby gracze ze słabszym łączem nie tracili tur systematycznie.',
+        en: 'Server-side turn clocks with a tolerance margin, so players on slower connections do not lose turns systematically.',
+      },
+      {
+        pl: 'Rozłączenie jest regułą gry, a nie awarią: gracz offline dostaje skróconą turę, więc jedna zerwana sesja nie zatrzymuje stołu.',
+        en: 'A dropped connection is a rule of the game, not a failure: an offline player gets a shortened turn, so one lost session does not stall the table.',
+      },
+    ],
+    about: {
+      pl: 'Projekt dowodowy tego, że potrafię napisać autorytatywny serwer stanu w czasie rzeczywistym, a nie tylko CRUD. Gracze dołączają kodem pokoju, dostają hasło (poza oszustem), na zmianę dają wskazówki i głosują. Sześć trybów, m.in. wersja z rysowaniem zamiast słów, wariant ze zwiększoną liczbą oszustów i tryb współpracy. Warstwa trwałości jest wymienna — Redis albo plik JSON za jednym interfejsem — więc ta sama aplikacja uruchamia się lokalnie bez żadnej infrastruktury.',
+      en: 'A proof project for writing an authoritative real-time state server rather than another CRUD app. Players join with a room code, receive a password (except the impostor), take turns giving clues and vote. Six modes, including a drawing variant, a version with more impostors and a co-op mode. The persistence layer is swappable — Redis or a JSON file behind one interface — so the same app runs locally with no infrastructure at all.',
+    },
+  },
+  {
+    id: 'service-reports',
+    name: { pl: 'System raportów serwisowych', en: 'Field service reports' },
+    category: 'web',
+    year: '2026',
+    image: '',
     color: '#0f9d6a',
+    status: 'private',
     tagline: {
-      pl: 'Aplikacja mobilna do budżetowania z podejściem mobile-first.',
-      en: 'A mobile-first personal budgeting app.',
+      pl: 'Zlecenia, technicy w terenie i raport serwisowy podpisywany palcem na miejscu.',
+      en: 'Work orders, field technicians and a service report signed on screen at the site.',
     },
-    role: { pl: 'Projekt produktu i wdrożenie', en: 'Product design & build' },
-    stack: ['React Native', 'Expo', 'Reanimated', 'SQLite'],
+    role: { pl: 'Backend i aplikacja terenowa', en: 'Backend & field app' },
+    stack: ['NestJS', 'Prisma + PostgreSQL', 'Redis', 'Puppeteer (PDF)', 'Next.js + React 19', 'Socket.IO', 'Playwright E2E', 'Swagger'],
     highlights: [
-      { pl: 'Gesty i mikroanimacje 60 fps na urządzeniach niskiej półki.', en: '60fps gestures and micro-animations on low-end devices.' },
-      { pl: 'Tryb offline-first z synchronizacją w tle.', en: 'Offline-first with background sync.' },
-      { pl: 'Kategoryzacja transakcji wspierana heurystyką.', en: 'Heuristic-assisted transaction categorization.' },
+      {
+        pl: 'Raport jest rekordem z historią, nie plikiem: obieg szkic → złożony → zatwierdzony / odrzucony, ze znacznikami czasu każdego przejścia.',
+        en: 'The report is a record with history, not a file: draft → submitted → approved / rejected, with a timestamp on every transition.',
+      },
+      {
+        pl: 'PDF generowany z szablonu HTML przez przeglądarkę bezgłową, w kolejce — pełna kontrola nad typografią i marginesami A4 bez blokowania żądań HTTP.',
+        en: 'PDFs rendered from an HTML template by a headless browser on a queue — full control over typography and A4 margins without blocking HTTP requests.',
+      },
+      {
+        pl: 'Aplikacja przygotowana na słaby zasięg: lokalna baza w przeglądarce, powiadomienia push i kanał czasu rzeczywistego.',
+        en: 'Built for weak coverage: a local in-browser database, push notifications and a real-time channel.',
+      },
     ],
     about: {
-      pl: 'Projekt od zera pod kątem kciuka — cała nawigacja w zasięgu jednej ręki. Największym wyzwaniem była płynność animacji przy jednoczesnej pracy offline.',
-      en: 'Designed thumb-first from scratch — all navigation within one-handed reach. The main challenge was keeping animations fluid while working fully offline.',
+      pl: 'System dla firmy serwisującej urządzenia techniczne w terenie: zlecenia, przydział techników, statusy i priorytety, a na końcu podpisany raport z numerem i ścieżką akceptacji. Bezpieczeństwo jest tu wymaganiem, nie dodatkiem — aplikacja odmawia startu przy słabych sekretach, tokeny odświeżające są rotowane i trzymane w bazie, a dziennik audytu zapisuje wartość przed i po, obejmując także nieudane logowania. Każdy punkt z audytu ma własny test E2E.',
+      en: 'A system for a company servicing technical equipment in the field: work orders, technician assignment, statuses and priorities, ending in a signed, numbered report with an approval path. Security is a requirement rather than an add-on — the app refuses to start on weak secrets, refresh tokens are rotated and stored in the database, and the audit log records before and after values, including failed logins. Every audit point has its own end-to-end test.',
     },
   },
   {
-    id: 'atelier',
-    name: 'Atelier',
+    id: 'course-platform',
+    name: { pl: 'Platforma sprzedaży kursów', en: 'Course sales platform' },
     category: 'commerce',
-    year: '2024',
-    image: img('1539278383962-a7774385fa02'),
+    year: '2026',
+    image: img('1627542557169-5ed71c66ed85'),
     color: '#d97706',
+    status: 'ongoing',
     tagline: {
-      pl: 'Minimalistyczny sklep modowy z konfiguratorem produktu.',
-      en: 'A minimalist fashion store with a product configurator.',
+      pl: 'Katalog kursów, terminarz slotów i rezerwacje ze ścieżką potwierdzenia.',
+      en: 'A course catalogue, a slot calendar and bookings with a confirmation path.',
     },
-    role: { pl: 'Front-end i integracja', en: 'Front-end & integration' },
-    stack: ['Next.js', 'Shopify', 'Framer Motion'],
+    role: { pl: 'Backend i frontend', en: 'Backend & front-end' },
+    stack: ['NestJS 11', 'MongoDB / Mongoose', 'Angular 19', 'PWA + Service Worker', 'Web Push', 'JWT + Passport'],
     highlights: [
-      { pl: 'Konwersja wyższa o 23% po przeprojektowaniu ścieżki zakupu.', en: '23% higher conversion after redesigning the checkout path.' },
-      { pl: 'LCP poniżej 1,2 s dzięki obrazom next/image i ISR.', en: 'Sub-1.2s LCP via next/image and ISR.' },
-      { pl: 'Konfigurator wariantów w czasie rzeczywistym.', en: 'Real-time variant configurator.' },
+      {
+        pl: 'Trasy publiczne i administracyjne rozdzielone dla każdego zasobu — uprawnienie jest własnością trasy, a nie warunkiem ukrytym w środku metody.',
+        en: 'Public and admin routes split per resource — permission belongs to the route instead of hiding inside a method.',
+      },
+      {
+        pl: 'Strefa czasowa obsłużona jawnie i w jednym miejscu, bo w systemie rezerwacyjnym „godzina” to pojęcie kalendarza, a nie punkt na osi czasu.',
+        en: 'Time zones handled explicitly and in one place, because in a booking system an “hour” is a calendar concept, not a point on a timeline.',
+      },
+      {
+        pl: 'Przypomnienia szukane w oknie czasowym, nie o konkretnej godzinie — opóźnienie albo restart procesu nie powoduje pominięcia wysyłki.',
+        en: 'Reminders matched over a time window rather than at an exact hour — a delay or a process restart cannot skip a send.',
+      },
     ],
     about: {
-      pl: 'Sklep stawia na zdjęcia produktu i spokojną typografię. Skupiliśmy się na szybkości i płynnych przejściach, aby zakupy przypominały przeglądanie lookbooka.',
-      en: 'The store leans on product photography and calm typography. We focused on speed and smooth transitions so shopping feels like browsing a lookbook.',
+      pl: 'Platforma pozwalająca sprzedawać własne kursy i zajęcia: katalog, terminarz dostępnych slotów, rezerwacje, panel administracyjny, komunikacja z uczestnikiem i przypomnienia. Model zbliżony do znanych platform kursowych, ale prowadzony przez jednego autora treści. Frontend działa jako PWA z service workerem i własną warstwą tłumaczeń. Projekt jest w trakcie realizacji — podgląd udostępnimy po wdrożeniu.',
+      en: 'A platform for selling your own courses and classes: catalogue, calendar of available slots, bookings, an admin panel, participant messaging and reminders. The model is close to the familiar course platforms, but run by a single content author. The front-end is a PWA with a service worker and its own translation layer. The project is still in progress — preview once it ships.',
     },
   },
   {
-    id: 'nova',
-    name: 'Nova',
+    id: 'restaurant-booking',
+    name: { pl: 'Wizytówka restauracji z rezerwacjami', en: 'Restaurant site with bookings' },
     category: 'landing',
     year: '2025',
-    image: img('1635776063328-153b13e3c245'),
+    image: img('1539278383962-a7774385fa02'),
     color: '#7c3aed',
+    status: 'forSale',
     tagline: {
-      pl: 'Strona-wizytówka studia kreatywnego z animowanym hero.',
-      en: 'A creative studio landing page with an animated hero.',
+      pl: 'Strona lokalu i rezerwacje: stolik, wydarzenie albo wynajem całego lokalu.',
+      en: 'A venue site with bookings: a table, an event or a whole-venue hire.',
     },
-    role: { pl: 'Projekt i animacje', en: 'Design & motion' },
-    stack: ['Astro', 'GSAP', 'WebGL'],
+    role: { pl: 'Projekt, wdrożenie i audyt', en: 'Design, build & audit' },
+    stack: ['Angular 17 + PWA', 'Node + Express', 'MongoDB / Mongoose', 'JWT + refresh', 'reCAPTCHA v3', 'Web Push', 'Playwright', 'Tailwind'],
     highlights: [
-      { pl: 'Płynny scrollytelling sterujący sceną WebGL.', en: 'Smooth scrollytelling driving a WebGL scene.' },
-      { pl: 'Ocena 100/100 w Lighthouse na mobile.', en: '100/100 Lighthouse score on mobile.' },
-      { pl: 'Respektuje prefers-reduced-motion.', en: 'Respects prefers-reduced-motion.' },
+      {
+        pl: 'Trzy rodzaje rezerwacji w jednym modelu — stolik, wydarzenie i wynajem całego lokalu — a sprawdzenie kolizji rozumie, że wynajem lokalu wyklucza wszystkie pozostałe stoliki.',
+        en: 'Three kinds of booking in one model — table, event and whole-venue hire — with collision checks that know a venue hire rules out every remaining table.',
+      },
+      {
+        pl: 'Godziny otwarcia jako jedno źródło prawdy: ten sam rekord zasila stopkę strony, panel i walidację dostępnych terminów, więc strona nie obiecuje czegoś, czego system nie przyjmie.',
+        en: 'Opening hours as one source of truth: the same record feeds the site footer, the admin panel and slot validation, so the site cannot promise what the system will refuse.',
+      },
+      {
+        pl: 'Pełny cykl bezpieczeństwa: własny audyt (23 ustalenia, w tym 5 krytycznych), naprawy i 35 testów E2E pilnujących, żeby nie wróciły.',
+        en: 'A full security cycle: a self-run audit (23 findings, 5 critical), the fixes, and 35 end-to-end tests that keep them from coming back.',
+      },
     ],
     about: {
-      pl: 'Wyzwaniem było połączenie efektownej animacji z doskonałą wydajnością na telefonach. Ciężkie efekty ładują się warunkowo i wyłączają dla użytkowników preferujących mniej ruchu.',
-      en: 'The challenge was pairing bold motion with excellent mobile performance. Heavy effects load conditionally and switch off for users who prefer less motion.',
-    },
-  },
-  {
-    id: 'pulse',
-    name: 'Pulse',
-    category: 'mobile',
-    year: '2023',
-    image: img('1695048064952-44b984f2af6d'),
-    color: '#e11d48',
-    tagline: {
-      pl: 'Aplikacja zdrowotna z pierścieniami aktywności i wykresami.',
-      en: 'A health app with activity rings and charts.',
-    },
-    role: { pl: 'Projekt i front-end', en: 'Design & front-end' },
-    stack: ['React Native', 'Skia', 'HealthKit'],
-    highlights: [
-      { pl: 'Niestandardowe wykresy rysowane na Skia dla płynności.', en: 'Custom charts drawn on Skia for fluidity.' },
-      { pl: 'Integracja z HealthKit i Google Fit.', en: 'HealthKit and Google Fit integration.' },
-      { pl: 'Haptyka wzmacniająca informację zwrotną.', en: 'Haptics reinforcing feedback.' },
-    ],
-    about: {
-      pl: 'Dane zdrowotne bywają przytłaczające — postawiliśmy na czytelną hierarchię i jeden akcent koloru na ekran, by użytkownik od razu wiedział, co jest ważne.',
-      en: 'Health data can overwhelm — we leaned on clear hierarchy and one accent color per screen so users instantly know what matters.',
-    },
-  },
-  {
-    id: 'grid',
-    name: 'Grid',
-    category: 'web',
-    year: '2023',
-    image: img('1686061592689-312bbfb5c055'),
-    color: '#0891b2',
-    tagline: {
-      pl: 'Open-source system projektowy i biblioteka komponentów.',
-      en: 'An open-source design system and component library.',
-    },
-    role: { pl: 'Autor i utrzymanie', en: 'Author & maintainer' },
-    stack: ['React', 'TypeScript', 'Radix', 'Storybook'],
-    highlights: [
-      { pl: 'Ponad 60 dostępnych komponentów z tokenami motywu.', en: '60+ accessible components with theme tokens.' },
-      { pl: '1,4k gwiazdek na GitHubie i aktywna społeczność.', en: '1.4k GitHub stars and an active community.' },
-      { pl: 'Tryb jasny i ciemny sterowany zmiennymi CSS.', en: 'Light/dark mode driven by CSS variables.' },
-    ],
-    about: {
-      pl: 'Zbudowaliśmy Grid, aby przyspieszyć start nowych projektów. Nacisk położyliśmy na dostępność i spójne tokeny, dzięki czemu motywowanie sprowadza się do zmiany kilku zmiennych.',
-      en: 'We built Grid to speed up new projects. We emphasized accessibility and consistent tokens, so theming comes down to changing a few variables.',
+      pl: 'Strona restauracji połączona z systemem rezerwacji, w którym obsługa prowadzi wszystko z panelu: stoliki i sale, menu z kategoriami, godziny otwarcia, potwierdzenia i raporty dzienne. Panel jest osobną aplikacją instalowalną na telefonie, z wymuszoną aktualizacją pokazywaną tylko obsłudze — zainstalowana PWA nie ma przycisku odświeżania, więc administrator, który odłoży aktualizację, potrafi utknąć na starej wersji bez drogi wyjścia.',
+      en: 'A restaurant site wired to a booking system where staff run everything from one panel: tables and rooms, a categorised menu, opening hours, confirmations and daily reports. The panel is a separate app installable on a phone, with a forced update prompt shown only to staff — an installed PWA has no refresh button, so an admin who postpones an update can get stuck on an old version with no way out.',
     },
   },
 ]
@@ -209,6 +303,31 @@ export const t = {
   caseStudy: { pl: 'Case study', en: 'Case study' },
   viewLive: { pl: 'Zobacz na żywo', en: 'View live' },
   viewCode: { pl: 'Kod', en: 'Code' },
+  workNote: {
+    pl: 'Większość tych realizacji działa wewnątrz firm klientów. Warstwa funkcjonalna — dane, ekrany i reguły biznesowe — pozostaje ich własnością, więc podglądu nie udostępniamy publicznie. Architekturę, kod i decyzje techniczne przechodzimy na żywo.',
+    en: 'Most of this work runs inside client companies. The functional layer — data, screens and business rules — stays theirs, so previews are not public. The architecture, the code and the decisions behind them we walk through live.',
+  },
+  workNoteCta: { pl: 'Umówmy spotkanie', en: 'Set up a meeting' },
+  statusPrivate: { pl: 'Prywatny SaaS', en: 'Private SaaS' },
+  statusOngoing: { pl: 'W realizacji', en: 'In progress' },
+  statusForSale: { pl: 'Możliwa sprzedaż', en: 'Open to sell' },
+  forSaleNote: {
+    pl: 'Gotowy produkt — możemy wdrożyć go u Ciebie i dopasować do Twoich reguł.',
+    en: 'A finished product — we can deploy it for you and fit it to your rules.',
+  },
+  previewBlocked: { pl: 'Podgląd zablokowany', en: 'Preview blocked' },
+  privateNote: {
+    pl: 'Prywatny SaaS — podgląd i repozytorium pozostają niedostępne.',
+    en: 'A private SaaS — preview and repository stay closed.',
+  },
+  ongoingNote: {
+    pl: 'Projekt w realizacji — podgląd udostępnimy po wdrożeniu.',
+    en: 'Still in progress — preview once it ships.',
+  },
+  commercialNote: {
+    pl: 'Projekt komercyjny — kod niepubliczny.',
+    en: 'A client project — source is not public.',
+  },
   roleLabel: { pl: 'Rola', en: 'Role' },
   yearLabel: { pl: 'Rok', en: 'Year' },
   stackLabel: { pl: 'Technologie', en: 'Stack' },

@@ -287,6 +287,26 @@ export default function App() {
             </div>
           </Reveal>
 
+          {/* Said once, above the grid — the cards already carry their own badges. */}
+          <Reveal delay={250}>
+            <p className="mb-6 flex max-w-2xl items-start gap-2.5 text-sm leading-relaxed text-[var(--color-ink-soft)]">
+              <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-ink-faint)]" />
+              <span>
+                {t.workNote[lang]}{' '}
+                <a
+                  href="#contact"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+                  }}
+                  className="font-medium text-[var(--color-ink)] underline decoration-[var(--color-line-strong)] underline-offset-4 transition-colors hover:decoration-[var(--color-accent)]"
+                >
+                  {t.workNoteCta[lang]}
+                </a>
+              </span>
+            </p>
+          </Reveal>
+
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {shown.map((p, i) => (
               <Reveal key={p.id} delay={i * 75}>
@@ -905,47 +925,124 @@ function Hero({ lang }: { lang: Lang }) {
 
 /* ------------------------------------------------------------------ Card */
 
+function LockIcon({ className, stroke }: { className: string; stroke?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={stroke ?? 'currentColor'}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="4" y="10" width="16" height="11" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  )
+}
+
+/** Cover for a project whose preview is withheld — no screenshot exists to show. */
+function LockedCover({ color, label }: { color: string; label: string }) {
+  return (
+    <div
+      className="flex h-full w-full flex-col items-center justify-center gap-2"
+      style={{ background: `color-mix(in srgb, ${color} 12%, var(--color-surface))` }}
+    >
+      <LockIcon className="h-7 w-7" stroke={color} />
+      <span className="font-mono text-[11px] text-[var(--color-ink-soft)]">{label}</span>
+    </div>
+  )
+}
+
+const statusStyles: Record<NonNullable<Project['status']>, { label: keyof typeof t; className: string }> = {
+  // Withheld reads neutral, in-flight reads amber, and the one that invites a
+  // conversation is the only badge allowed to use the positive colour.
+  private: {
+    label: 'statusPrivate',
+    className: 'border-[var(--color-line-strong)] bg-[var(--color-canvas)] text-[var(--color-ink-soft)]',
+  },
+  ongoing: {
+    label: 'statusOngoing',
+    className: 'border-[var(--color-warn)]/40 bg-[var(--color-warn)]/10 text-[var(--color-warn)]',
+  },
+  forSale: {
+    label: 'statusForSale',
+    className: 'border-[var(--color-positive)]/40 bg-[var(--color-positive)]/10 text-[var(--color-positive)]',
+  },
+}
+
+function StatusBadge({ status, lang }: { status: NonNullable<Project['status']>; lang: Lang }) {
+  const style = statusStyles[status]
+  return (
+    <span
+      className={`rounded-full border px-2 py-0.5 font-mono text-[10px] font-medium backdrop-blur ${style.className}`}
+    >
+      {(t[style.label] as LS)[lang]}
+    </span>
+  )
+}
+
 function Card({ p, lang, onOpen }: { p: Project; lang: Lang; onOpen: () => void }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] transition-all hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(20,22,26,0.35)]">
-      <button onClick={onOpen} className="relative block aspect-[16/11] overflow-hidden text-left">
+      <button onClick={onOpen} className="relative block aspect-[16/11] w-full overflow-hidden text-left">
         <div className="absolute inset-0" style={{ background: p.color, opacity: 0.08 }} />
-        <img
-          src={p.image}
-          alt={p.name}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-        />
+        {p.status === 'private' || !p.image ? (
+          <LockedCover color={p.color} label={t.previewBlocked[lang]} />
+        ) : (
+          <img
+            src={p.image}
+            alt={p.name[lang]}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          />
+        )}
         <span
           className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur"
           style={{ background: `color-mix(in srgb, ${p.color} 82%, black 18%)` }}
         >
           {categories.find((c) => c.key === p.category)?.label[lang]}
         </span>
+        {p.status && (
+          <span className="absolute right-3 top-3">
+            <StatusBadge status={p.status} lang={lang} />
+          </span>
+        )}
       </button>
 
+      {/* Every zone below has a reserved height, so cards match across rows too —
+          grid stretching alone only evens out cards within a single row. */}
       <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="font-display text-lg font-semibold tracking-tight">{p.name}</h3>
-          <span className="font-mono text-xs text-[var(--color-ink-faint)]">{p.year}</span>
+        <div className="flex min-h-[3.5rem] items-baseline justify-between gap-3">
+          <h3 className="line-clamp-2 font-display text-lg font-semibold tracking-tight">
+            {p.name[lang]}
+          </h3>
+          <span className="shrink-0 font-mono text-xs text-[var(--color-ink-faint)]">{p.year}</span>
         </div>
-        <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-ink-soft)]">
+        <p className="mt-1.5 line-clamp-2 min-h-[2.85rem] text-sm leading-relaxed text-[var(--color-ink-soft)]">
           {p.tagline[lang]}
         </p>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {p.stack.slice(0, 3).map((s) => (
+        <div className="mt-3 mb-4 flex h-[1.4rem] items-center gap-1.5 overflow-hidden">
+          {p.stack.slice(0, 2).map((s) => (
             <span
               key={s}
-              className="rounded-md bg-[var(--color-canvas)] px-2 py-0.5 font-mono text-[11px] text-[var(--color-ink-soft)]"
+              className="shrink-0 whitespace-nowrap rounded-md bg-[var(--color-canvas)] px-2 py-0.5 font-mono text-[11px] text-[var(--color-ink-soft)]"
             >
               {s}
             </span>
           ))}
+          {p.stack.length > 2 && (
+            <span className="shrink-0 font-mono text-[11px] text-[var(--color-ink-faint)]">
+              +{p.stack.length - 2}
+            </span>
+          )}
         </div>
 
         <div
-          className="mt-4 flex items-center gap-2 pt-4"
+          className="mt-auto flex items-center gap-2 pt-4"
           style={{ borderTop: '1px solid var(--color-line)' }}
         >
           <button
@@ -954,14 +1051,18 @@ function Card({ p, lang, onOpen }: { p: Project; lang: Lang; onOpen: () => void 
           >
             {t.caseStudy[lang]}
           </button>
-          <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            aria-label={t.viewLive[lang]}
-            className="rounded-lg border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-canvas)]"
-          >
-            ↗
-          </a>
+          {/* Only a real link earns an arrow; the rest of the work is not public. */}
+          {p.liveUrl && (
+            <a
+              href={p.liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t.viewLive[lang]}
+              className="rounded-lg border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-canvas)]"
+            >
+              ↗
+            </a>
+          )}
         </div>
       </div>
     </article>
@@ -990,7 +1091,11 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
       >
         <div className="relative max-h-[38vh] shrink-0 overflow-hidden" style={{ aspectRatio: '16 / 9' }}>
           <div className="absolute inset-0" style={{ background: p.color, opacity: 0.1 }} />
-          <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+          {p.status === 'private' || !p.image ? (
+            <LockedCover color={p.color} label={t.previewBlocked[lang]} />
+          ) : (
+            <img src={p.image} alt={p.name[lang]} className="h-full w-full object-cover" />
+          )}
           <button
             onClick={onClose}
             aria-label={t.close[lang]}
@@ -1003,10 +1108,15 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
         <div className="min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-              {p.name}
+              {p.name[lang]}
             </h2>
             <span className="font-mono text-sm text-[var(--color-ink-faint)]">{p.year}</span>
           </div>
+          {p.status && (
+            <div className="mt-3">
+              <StatusBadge status={p.status} lang={lang} />
+            </div>
+          )}
           <p className="mt-2 text-base text-[var(--color-ink-soft)]">{p.tagline[lang]}</p>
 
           <div className="mt-6 grid grid-cols-2 gap-4 border-y border-[var(--color-line)] py-5 sm:grid-cols-3">
@@ -1053,8 +1163,9 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
             </ul>
           </div>
 
+          {/* A disabled button says nothing; when there is no link, say why. */}
           <div className="mt-8 flex flex-col gap-2.5 sm:flex-row">
-            {p.liveUrl ? (
+            {p.liveUrl && (
               <a
                 href={p.liveUrl}
                 target="_blank"
@@ -1063,16 +1174,8 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
               >
                 {t.viewLive[lang]}
               </a>
-            ) : (
-              <button
-                disabled
-                className="flex-1 rounded-xl bg-[var(--color-line)] px-4 py-3 text-center text-sm font-semibold text-[var(--color-ink-faint)] cursor-not-allowed"
-              >
-                {t.viewLive[lang]}
-              </button>
             )}
-            
-            {p.repoUrl ? (
+            {p.repoUrl && (
               <a
                 href={p.repoUrl}
                 target="_blank"
@@ -1081,13 +1184,17 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
               >
                 {t.viewCode[lang]}
               </a>
-            ) : (
-              <button
-                disabled
-                className="flex-1 rounded-xl border border-[var(--color-line)] px-4 py-3 text-center text-sm font-semibold text-[var(--color-ink-faint)] cursor-not-allowed"
-              >
-                {t.viewCode[lang]}
-              </button>
+            )}
+            {!p.liveUrl && !p.repoUrl && (
+              <p className="flex-1 rounded-xl border border-[var(--color-line)] bg-[var(--color-canvas)] px-4 py-3 text-center text-sm text-[var(--color-ink-soft)]">
+                {p.status === 'private'
+                  ? t.privateNote[lang]
+                  : p.status === 'ongoing'
+                    ? t.ongoingNote[lang]
+                    : p.status === 'forSale'
+                      ? t.forSaleNote[lang]
+                      : t.commercialNote[lang]}
+              </p>
             )}
           </div>
         </div>
