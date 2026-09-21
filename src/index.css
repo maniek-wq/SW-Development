@@ -110,3 +110,13 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Falling code on the security face of the flipping business card */
+@keyframes flip-card-rain {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

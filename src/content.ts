@@ -1,5 +1,7 @@
+import jakubPhoto from './img/jakub-wasilewski.jpg'
+
 export type Lang = 'pl' | 'en'
-type LS = Record<Lang, string>
+export type LS = Record<Lang, string>
 
 /* ------------------------------------------------------------- Portfolio */
 
@@ -240,44 +242,83 @@ export type ServiceEntry = {
   skills: string[];
 }
 
+/** Icon keys drawn by `faceIcons` on the flipping business card. */
+export type FaceIcon =
+  | 'figma'
+  | 'motion'
+  | 'layers'
+  | 'key'
+  | 'bolt'
+  | 'shield'
+  | 'chart'
+  | 'flow'
+  | 'target';
+
+export type StackItem = {
+  icon: FaceIcon;
+  label: string | LS;
+}
+
 export type TeamMember = {
   name: LS;
   role: LS;
   education: LS;
   bio: LS;
   image: string;
+  /** Picks the hue and the background texture of this person's card face. */
+  theme: 'design' | 'security' | 'analysis';
+  /** Three tools or methods this person is known for, shown on the card. */
+  stack: StackItem[];
 }
 
 export const teamMembers: TeamMember[] = [
   {
-    name: { pl: 'Maja', en: 'Maja' },
+    name: { pl: 'Mikołaj Sitek', en: 'Mikołaj Sitek' },
     role: { pl: 'UX/UI & Front-end', en: 'UX/UI & Front-end' },
     education: { pl: 'Edukacja: do uzupełnienia', en: 'Education: to be added' },
     bio: {
       pl: 'Łączy myślenie produktowe z dbałością o każdy detal interfejsu.',
       en: 'Combines product thinking with care for every interface detail.'
     },
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&h=800&fit=crop'
+    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&h=800&fit=crop',
+    theme: 'design',
+    stack: [
+      { icon: 'figma', label: 'Figma' },
+      { icon: 'motion', label: 'Framer Motion' },
+      { icon: 'layers', label: { pl: 'Design system', en: 'Design system' } }
+    ]
   },
   {
-    name: { pl: 'Współzałożyciel', en: 'Co-founder' },
+    name: { pl: 'Jakub Wasilewski', en: 'Jakub Wasilewski' },
     role: { pl: 'Development & Security', en: 'Development & Security' },
     education: { pl: 'Edukacja: do uzupełnienia', en: 'Education: to be added' },
     bio: {
       pl: 'Buduje szybkie, stabilne aplikacje i dba o ich bezpieczeństwo.',
       en: 'Builds fast, reliable applications and keeps them secure.'
     },
-    image: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=800&h=800&fit=crop'
+    image: jakubPhoto,
+    theme: 'security',
+    stack: [
+      { icon: 'key', label: 'JWT' },
+      { icon: 'bolt', label: { pl: 'Anty-DDoS', en: 'Anti-DDoS' } },
+      { icon: 'shield', label: 'OWASP' }
+    ]
   },
   {
-    name: { pl: 'Analityk biznesowy', en: 'Business Analyst' },
+    name: { pl: 'Wojciech Nowicki', en: 'Wojciech Nowicki' },
     role: { pl: 'Discovery & Kontakt z klientem', en: 'Discovery & Client Contact' },
     education: { pl: 'Edukacja: do uzupełnienia', en: 'Education: to be added' },
     bio: {
       pl: 'Zbiera wymagania i porządkuje kontekst aplikacji, dbając o stały kontakt z klientem na każdym etapie.',
       en: 'Gathers requirements and organizes app context, keeping the client in close contact at every stage.'
     },
-    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&h=800&fit=crop'
+    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&h=800&fit=crop',
+    theme: 'analysis',
+    stack: [
+      { icon: 'target', label: 'Discovery' },
+      { icon: 'flow', label: 'BPMN' },
+      { icon: 'chart', label: { pl: 'Wskaźniki KPI', en: 'KPI tracking' } }
+    ]
   }
 ]
 

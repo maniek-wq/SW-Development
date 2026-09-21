@@ -1,6 +1,20 @@
 import { useEffect, useState, useRef, type ReactNode } from 'react'
 import { motion, useSpring, useMotionValueEvent } from 'framer-motion'
-import { type Lang, type Project, categories, projects, t, services, teamMembers, processSteps, testimonials } from './content'
+import {
+  type Lang,
+  type LS,
+  type Project,
+  type FaceIcon,
+  type StackItem,
+  type TeamMember,
+  categories,
+  projects,
+  t,
+  services,
+  teamMembers,
+  processSteps,
+  testimonials,
+} from './content'
 
 /* --------------------------------------------------------------- Reveal */
 
@@ -220,7 +234,7 @@ export default function App() {
   const shown = projects.filter((p) => filter === 'all' || p.category === filter)
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-clip">
       <Header lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} />
 
       <main className="mx-auto w-full max-w-6xl px-5 pt-16 sm:px-8">
@@ -347,15 +361,25 @@ function Header({
   theme: 'light' | 'dark'
   setTheme: (t: 'light' | 'dark') => void
 }) {
-  const [activeSection, setActiveSection] = useState<string>('')
-
-  // Bendable navbar border: the vertical pill's right edge dips into a notch
-  // beside the hovered link. We draw the outline as an SVG path and clip the
+  // Bendable navbar border: the horizontal pill's bottom edge dips into a notch
+  // below the hovered link. We draw the outline as an SVG path and clip the
   // glass to it.
   const barRef = useRef<HTMLDivElement>(null)
   const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({})
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
   const [navOpen, setNavOpen] = useState(false)
+
+  // The pill unfolds on its own once the page is scrolled past the hero fold,
+  // and folds back to icons at the top. Hovering still unfolds it anywhere.
+  const [scrolled, setScrolled] = useState(false)
+  const expanded = navOpen || scrolled
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const goToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault()
@@ -363,7 +387,7 @@ function Header({
   }
   const [bar, setBar] = useState({ w: 0, h: 0 })
   const [outline, setOutline] = useState('')
-  const notchY = useSpring(0, { stiffness: 420, damping: 34 })
+  const notchX = useSpring(0, { stiffness: 420, damping: 34 })
   const notchDepth = useSpring(0, { stiffness: 420, damping: 30 })
 
   useEffect(() => {
@@ -379,20 +403,20 @@ function Header({
   const buildOutline = () => {
     const { w: W, h: H } = bar
     if (W <= 0 || H <= 0) return ''
-    const r = W / 2
-    const hw = 20 // half-height of the notch mouth
-    const dep = notchDepth.get() // bump depth to the right
-    const y = Math.max(r + hw, Math.min(H - r - hw, notchY.get()))
+    const r = H / 2
+    const hw = 20 // half-width of the notch mouth
+    const dep = notchDepth.get() // bump depth downwards
+    const x = Math.max(r + hw, Math.min(W - r - hw, notchX.get()))
     return (
-      `M 0 ${r} A ${r} ${r} 0 0 1 ${W} ${r} ` +
-      `V ${y - hw} C ${W} ${y - hw * 0.55} ${W + dep} ${y - hw * 0.5} ${W + dep} ${y} ` +
-      `C ${W + dep} ${y + hw * 0.5} ${W} ${y + hw * 0.55} ${W} ${y + hw} ` +
-      `V ${H - r} A ${r} ${r} 0 0 1 0 ${H - r} V ${r} Z`
+      `M ${r} 0 H ${W - r} A ${r} ${r} 0 0 1 ${W - r} ${H} ` +
+      `H ${x + hw} C ${x + hw * 0.55} ${H} ${x + hw * 0.5} ${H + dep} ${x} ${H + dep} ` +
+      `C ${x - hw * 0.5} ${H + dep} ${x - hw * 0.55} ${H} ${x - hw} ${H} ` +
+      `H ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`
     )
   }
 
   useEffect(() => setOutline(buildOutline()), [bar])
-  useMotionValueEvent(notchY, 'change', () => setOutline(buildOutline()))
+  useMotionValueEvent(notchX, 'change', () => setOutline(buildOutline()))
   useMotionValueEvent(notchDepth, 'change', () => setOutline(buildOutline()))
 
   useEffect(() => {
@@ -404,28 +428,11 @@ function Header({
     }
     const br = el.getBoundingClientRect()
     const lr = link.getBoundingClientRect()
-    const cy = lr.top - br.top + lr.height / 2
-    if (notchDepth.get() < 0.5) notchY.jump(cy)
-    else notchY.set(cy)
+    const cx = lr.left - br.left + lr.width / 2
+    if (notchDepth.get() < 0.5) notchX.jump(cx)
+    else notchX.set(cx)
     notchDepth.set(12)
   }, [hoveredKey, bar])
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id)
-          }
-        })
-      },
-      { rootMargin: '-40% 0px -40% 0px' }
-    )
-
-    const sections = document.querySelectorAll('section[id]')
-    sections.forEach((s) => observer.observe(s))
-    return () => observer.disconnect()
-  }, [])
 
   return (
     <>
@@ -476,7 +483,9 @@ function Header({
         </div>
       </div>
 
-      {/* Vertical nav pill glued to the middle of the left margin */}
+      {/* Horizontal nav pill: a thumb-reachable dock at the bottom on phones and
+          tablets, moving up into the top band next to brand and controls on
+          desktop, where there is room for it beside them. */}
       <div
         ref={barRef}
         onMouseEnter={() => setNavOpen(true)}
@@ -485,7 +494,7 @@ function Header({
           setHoveredKey(null)
         }}
         style={outline ? { clipPath: `path('${outline}')` } : undefined}
-        className="fixed left-3 top-1/2 z-40 hidden -translate-y-1/2 flex-col gap-1 bg-[var(--color-canvas)]/55 py-3 pl-2 pr-3 backdrop-blur-2xl backdrop-saturate-150 [filter:drop-shadow(0_12px_28px_rgba(20,22,26,0.18))] lg:flex"
+        className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 flex-row items-center gap-1 bg-[var(--color-canvas)]/55 px-2 py-1.5 backdrop-blur-2xl backdrop-saturate-150 [filter:drop-shadow(0_12px_28px_rgba(20,22,26,0.18))] lg:bottom-auto lg:top-3"
       >
         {/* The pill's own bendable outline */}
         <svg
@@ -497,45 +506,33 @@ function Header({
           <path d={outline} fill="none" stroke="var(--color-line-strong)" strokeWidth={1.25} />
         </svg>
 
-        {(['work', 'about', 'testimonials', 'contact'] as const).map((k) => {
-          const isActive = activeSection === k
-          return (
-            <a
-              key={k}
-              ref={(el) => {
-                linkRefs.current[k] = el
-              }}
-              href={`#${k}`}
-              onClick={(e) => goToSection(e, k)}
-              onMouseEnter={() => setHoveredKey(k)}
-              title={t.nav[k][lang]}
-              className={`relative flex items-center rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'text-[var(--color-ink)]'
-                  : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+        {(['work', 'about', 'testimonials', 'contact'] as const).map((k) => (
+          <a
+            key={k}
+            ref={(el) => {
+              linkRefs.current[k] = el
+            }}
+            href={`#${k}`}
+            onClick={(e) => goToSection(e, k)}
+            onMouseEnter={() => setHoveredKey(k)}
+            title={t.nav[k][lang]}
+            aria-label={t.nav[k][lang]}
+            className="relative flex items-center rounded-lg px-2.5 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
+          >
+            <span className="relative z-10 flex h-[18px] w-[18px] shrink-0 items-center justify-center">
+              {navIcons[k]}
+            </span>
+            {/* Labels unfold from lg up only: expanded, the pill is wider than a
+                phone screen, so the dock stays icons-only below that. */}
+            <span
+              className={`relative z-10 ml-0 max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ${
+                expanded ? 'lg:ml-3 lg:max-w-[10rem] lg:opacity-100' : ''
               }`}
             >
-              {isActive && (
-                <motion.div
-                  layoutId="nav-active"
-                  className="absolute inset-0 rounded-lg bg-[var(--color-surface)] shadow-sm border border-[var(--color-line)]"
-                  style={{ zIndex: -1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-              <span className="relative z-10 flex h-[18px] w-[18px] shrink-0 items-center justify-center">
-                {navIcons[k]}
-              </span>
-              <span
-                className={`relative z-10 overflow-hidden whitespace-nowrap transition-all duration-300 ${
-                  navOpen ? 'ml-3 max-w-[10rem] opacity-100' : 'ml-0 max-w-0 opacity-0'
-                }`}
-              >
-                {t.nav[k][lang]}
-              </span>
-            </a>
-          )
-        })}
+              {t.nav[k][lang]}
+            </span>
+          </a>
+        ))}
       </div>
     </>
   )
@@ -543,28 +540,217 @@ function Header({
 
 /* -------------------------------------------------------------- FlipCard */
 
+/** Small glyphs for the tools listed on each card face. */
+const faceIcons: Record<FaceIcon, ReactNode> = {
+  figma: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <path d="M5 4h7v16" />
+      <circle cx="17" cy="8" r="4" />
+      <path d="M5 12h7" />
+    </svg>
+  ),
+  motion: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <path d="M3 18c5 0 5-12 10-12s5 6 8 6" />
+      <circle cx="13" cy="6" r="2.2" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  layers: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <path d="m12 3 8 4.5-8 4.5-8-4.5z" />
+      <path d="m4 14 8 4.5 8-4.5" />
+    </svg>
+  ),
+  key: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <circle cx="8" cy="12" r="4" />
+      <path d="M12 12h9" />
+      <path d="M17 12v3.5" />
+    </svg>
+  ),
+  bolt: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <path d="M13 2 4.5 13H11l-1 9 8.5-11H12z" />
+    </svg>
+  ),
+  shield: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <path d="M12 3 5 6v6c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  ),
+  chart: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <path d="M4 20V10" />
+      <path d="M10 20V4" />
+      <path d="M16 20v-7" />
+      <path d="M22 20H2" />
+    </svg>
+  ),
+  flow: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <rect x="3" y="3" width="6" height="5" rx="1.2" />
+      <rect x="15" y="16" width="6" height="5" rx="1.2" />
+      <path d="M6 8v7a3 3 0 0 0 3 3h6" />
+    </svg>
+  ),
+  target: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="3.2" />
+    </svg>
+  ),
+}
+
+type FaceTheme = 'studio' | TeamMember['theme']
+
+/** One hue per discipline; the texture, the badge and the role line share it. */
+const faceHues: Record<FaceTheme, string> = {
+  studio: 'var(--color-accent)',
+  design: '#7c3aed',
+  security: 'var(--color-positive)',
+  analysis: 'var(--color-warn)',
+}
+
+// Fixed, not random: the rain has to look the same on every render so the two
+// card faces never disagree mid-flip.
+const rainColumns = [
+  '01001011010011010110100101',
+  '11010010110100101101001011',
+  '10110100101100110100101101',
+  '01101001011010010110100110',
+  '10010110100110101101001011',
+  '11001011010010110100101100',
+  '01011010011010010110101101',
+  '10100101101001011011001010',
+  '01101101001011010010110100',
+  '10010110101101001011010011',
+  '11010110100101100101101001',
+  '00101101001101011010010110',
+]
+
+function FaceTexture({ theme, hue }: { theme: FaceTheme; hue: string }) {
+  if (theme === 'security') {
+    return (
+      <div
+        className="absolute inset-0 overflow-hidden opacity-[0.22] [mask-image:linear-gradient(to_bottom,transparent,#000_25%,#000_70%,transparent)]"
+        aria-hidden="true"
+      >
+        <div className="flex h-full justify-between px-1">
+          {rainColumns.map((column, i) => (
+            <span
+              key={i}
+              className="block w-[1ch] break-all font-mono text-[9px] leading-[11px] [animation:flip-card-rain_linear_infinite]"
+              style={{ color: hue, animationDuration: `${5 + i * 0.7}s` }}
+            >
+              {column + column}
+            </span>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (theme === 'design') {
+    return (
+      <svg
+        viewBox="0 0 160 110"
+        preserveAspectRatio="xMidYMid slice"
+        className="absolute inset-0 h-full w-full opacity-[0.28]"
+        aria-hidden="true"
+      >
+        {[18, 46, 74, 102, 130].map((x) => (
+          <rect key={x} x={x} y="0" width="12" height="110" fill={hue} opacity="0.14" />
+        ))}
+        {[24, 48, 72, 96].map((y) => (
+          <line key={y} x1="0" y1={y} x2="160" y2={y} stroke={hue} strokeWidth="0.4" opacity="0.4" />
+        ))}
+        <path d="M6 94 C 44 94 40 32 82 32 S 126 72 154 20" fill="none" stroke={hue} strokeWidth="1.3" opacity="0.8" />
+        <circle cx="82" cy="32" r="2.8" fill={hue} />
+        <circle cx="6" cy="94" r="2" fill={hue} />
+        <circle cx="154" cy="20" r="2" fill={hue} />
+      </svg>
+    )
+  }
+
+  if (theme === 'analysis') {
+    return (
+      <svg
+        viewBox="0 0 160 110"
+        preserveAspectRatio="xMidYMid slice"
+        className="absolute inset-0 h-full w-full opacity-[0.28]"
+        aria-hidden="true"
+      >
+        <line x1="8" y1="96" x2="152" y2="96" stroke={hue} strokeWidth="0.6" opacity="0.6" />
+        {[
+          [18, 62],
+          [44, 44],
+          [70, 70],
+          [96, 30],
+          [122, 50],
+        ].map(([x, y]) => (
+          <rect key={x} x={x} y={y} width="14" height={96 - y} fill={hue} opacity="0.16" />
+        ))}
+        <polyline
+          points="25,70 51,52 77,60 103,24 129,38"
+          fill="none"
+          stroke={hue}
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.85"
+        />
+        {[
+          [25, 70],
+          [51, 52],
+          [77, 60],
+          [103, 24],
+          [129, 38],
+        ].map(([x, y]) => (
+          <circle key={x} cx={x} cy={y} r="2" fill={hue} />
+        ))}
+      </svg>
+    )
+  }
+
+  return (
+    <div
+      className="absolute inset-0 opacity-[0.16]"
+      style={{
+        backgroundImage: `radial-gradient(${hue} 0.9px, transparent 1px)`,
+        backgroundSize: '11px 11px',
+      }}
+      aria-hidden="true"
+    />
+  )
+}
+
 function FlipCard({ lang }: { lang: Lang }) {
-  const faces = [
+  const faces: {
+    tag: string | LS
+    name: string | LS
+    role: string | LS
+    theme: FaceTheme
+    stack: StackItem[]
+  }[] = [
     {
       tag: { pl: 'Studio', en: 'Studio' },
       name: 'SW Development',
       role: t.role[lang],
+      theme: 'studio',
+      stack: [
+        { icon: 'layers', label: { pl: 'Projektowanie', en: 'Design' } },
+        { icon: 'shield', label: { pl: 'Development', en: 'Development' } },
+        { icon: 'target', label: 'Discovery' },
+      ],
     },
-    {
+    ...teamMembers.map((member) => ({
       tag: { pl: 'Zespół', en: 'Team' },
-      name: { pl: 'Maja', en: 'Maja' },
-      role: { pl: 'UX/UI & Front-end', en: 'UX/UI & Front-end' },
-    },
-    {
-      tag: { pl: 'Zespół', en: 'Team' },
-      name: { pl: 'Współzałożyciel', en: 'Co-founder' },
-      role: { pl: 'Development & Security', en: 'Development & Security' },
-    },
-    {
-      tag: { pl: 'Zespół', en: 'Team' },
-      name: { pl: 'Analityk biznesowy', en: 'Business Analyst' },
-      role: { pl: 'Discovery & Kontakt z klientem', en: 'Discovery & Client Contact' },
-    },
+      name: member.name,
+      role: member.role,
+      theme: member.theme,
+      stack: member.stack,
+    })),
   ]
 
   const resolve = (v: string | { pl: string; en: string }) =>
@@ -573,7 +759,7 @@ function FlipCard({ lang }: { lang: Lang }) {
   const [index, setIndex] = useState(0)
 
   useEffect(() => {
-    const id = setInterval(() => setIndex((i) => i + 1), 2000)
+    const id = setInterval(() => setIndex((i) => i + 1), 3000)
     return () => clearInterval(id)
   }, [])
 
@@ -584,43 +770,79 @@ function FlipCard({ lang }: { lang: Lang }) {
   const front = faces[((frontStep % faces.length) + faces.length) % faces.length]
   const back = faces[((backStep % faces.length) + faces.length) % faces.length]
 
-  const Face = ({ data, back }: { data: typeof faces[number]; back?: boolean }) => (
-    <div
-      className="absolute inset-0 flex flex-col justify-between rounded-2xl border border-[var(--color-line-strong)] bg-[var(--color-surface)] p-5 shadow-[0_28px_55px_-22px_rgba(20,22,26,0.45)]"
-      style={{ backfaceVisibility: 'hidden', transform: back ? 'rotateY(180deg)' : undefined }}
-    >
-      <div className="flex items-start justify-between">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--color-accent)] font-display text-sm font-bold tracking-tight text-white">
-          SW
-        </span>
-        <span className="rounded-full border border-[var(--color-line)] bg-[var(--color-canvas)] px-2 py-1 font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-[var(--color-ink-soft)]">
-          {resolve(data.tag)}
-        </span>
+  const Face = ({ data, back }: { data: typeof faces[number]; back?: boolean }) => {
+    const hue = faceHues[data.theme]
+    return (
+      <div
+        className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-2xl border border-[var(--color-line-strong)] bg-[var(--color-surface)] p-5 shadow-[0_34px_65px_-24px_rgba(20,22,26,0.45)]"
+        style={{ backfaceVisibility: 'hidden', transform: back ? 'rotateY(180deg)' : undefined }}
+      >
+        <FaceTexture theme={data.theme} hue={hue} />
+
+        <div className="relative z-10 flex items-start justify-between">
+          <span
+            className="flex h-10 w-10 items-center justify-center rounded-xl font-display text-base font-bold tracking-tight text-white"
+            style={{ backgroundColor: hue }}
+          >
+            SW
+          </span>
+          <span className="rounded-full border border-[var(--color-line)] bg-[var(--color-canvas)] px-2.5 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--color-ink-soft)]">
+            {resolve(data.tag)}
+          </span>
+        </div>
+
+        <div className="relative z-10">
+          <p className="font-display text-lg font-semibold leading-tight tracking-tight text-[var(--color-ink)] xl:text-xl">
+            {resolve(data.name)}
+          </p>
+          <p
+            className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] xl:text-[11px]"
+            style={{ color: hue }}
+          >
+            {resolve(data.role)}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-1">
+            {data.stack.map((item, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 rounded-md border border-[var(--color-line)] bg-[var(--color-canvas)]/85 px-1.5 py-[3px] font-mono text-[9px] leading-none text-[var(--color-ink-soft)] xl:text-[10px]"
+              >
+                <span style={{ color: hue }}>{faceIcons[item.icon]}</span>
+                {resolve(item.label)}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
-      <div>
-        <p className="font-display text-lg font-semibold leading-tight tracking-tight text-[var(--color-ink)]">
-          {resolve(data.name)}
-        </p>
-        <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-accent)]">
-          {resolve(data.role)}
-        </p>
-      </div>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div className="pointer-events-none absolute right-0 top-9 hidden select-none lg:block" style={{ perspective: 1200 }} aria-hidden="true">
-      <div className="relative h-44 w-64">
-        <motion.div
+    <div
+      className="pointer-events-none absolute -right-4 top-6 hidden select-none lg:block xl:-right-14"
+      style={{ perspective: 1400 }}
+      aria-hidden="true"
+    >
+      <div className="relative h-52 w-[19rem] xl:h-64 xl:w-[23rem]">
+        {/* Static tilt wrapper: the flip below spins inside this tilted frame */}
+        <div
           className="relative h-full w-full"
-          style={{ transformStyle: 'preserve-3d' }}
-          animate={{ rotateY: index * 180 }}
-          transition={{ duration: 0.75, ease: [0.65, 0, 0.35, 1] }}
+          style={{
+            transformStyle: 'preserve-3d',
+            transform: 'rotateX(4deg) rotateY(8deg) rotateZ(1.5deg)',
+          }}
         >
-          <Face data={front} />
-          <Face data={back} back />
-        </motion.div>
-        <div className="absolute -bottom-6 left-1/2 h-5 w-40 -translate-x-1/2 rounded-full bg-[var(--color-ink)]/15 blur-md" />
+          <motion.div
+            className="relative h-full w-full"
+            style={{ transformStyle: 'preserve-3d' }}
+            animate={{ rotateY: index * 180 }}
+            transition={{ duration: 0.75, ease: [0.65, 0, 0.35, 1] }}
+          >
+            <Face data={front} />
+            <Face data={back} back />
+          </motion.div>
+        </div>
+        <div className="absolute -bottom-8 left-1/2 h-6 w-52 -translate-x-1/2 rounded-full bg-[var(--color-ink)]/15 blur-lg" />
       </div>
     </div>
   )
@@ -629,8 +851,10 @@ function FlipCard({ lang }: { lang: Lang }) {
 /* ------------------------------------------------------------------ Hero */
 
 function Hero({ lang }: { lang: Lang }) {
+  // Overflow stays visible so the flip card's shadow can spill past the
+  // content column; the page root clips horizontally instead.
   return (
-    <section id="hero" className="relative overflow-hidden py-12 sm:py-20">
+    <section id="hero" className="relative py-12 sm:py-20">
       <FlipCard lang={lang} />
 
       <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">
@@ -645,7 +869,8 @@ function Hero({ lang }: { lang: Lang }) {
         {t.role[lang]}
       </p>
 
-      <h1 className="mt-3 max-w-3xl font-display text-4xl font-semibold leading-[1.08] tracking-tight sm:text-6xl">
+      {/* Narrower from lg up so the headline clears the flip card in the corner */}
+      <h1 className="mt-3 max-w-3xl font-display text-4xl font-semibold leading-[1.08] tracking-tight sm:text-6xl lg:max-w-xl xl:max-w-2xl">
         {t.heroTitle[lang]}
       </h1>
       <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-ink-soft)] sm:text-lg">
