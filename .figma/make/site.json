@@ -1,0 +1,10 @@
+{
+  "description": "Provides bilingual Polish-English content or services to support users in both languages for effective communication and accessibility.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
