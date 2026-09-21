@@ -304,13 +304,18 @@ export const t = {
   viewLive: { pl: 'Zobacz na żywo', en: 'View live' },
   viewCode: { pl: 'Kod', en: 'Code' },
   workNote: {
-    pl: 'Większość tych realizacji działa wewnątrz firm klientów. Warstwa funkcjonalna — dane, ekrany i reguły biznesowe — pozostaje ich własnością, więc podglądu nie udostępniamy publicznie. Architekturę, kod i decyzje techniczne przechodzimy na żywo.',
-    en: 'Most of this work runs inside client companies. The functional layer — data, screens and business rules — stays theirs, so previews are not public. The architecture, the code and the decisions behind them we walk through live.',
+    pl: 'Każda z tych realizacji pokazuje inny zestaw umiejętności: inny backend, inny model danych, inne wymagania. Większość działa wewnątrz firm klientów, więc warstwa funkcjonalna — dane, ekrany i reguły biznesowe — pozostaje ich własnością i podglądu nie udostępniamy publicznie. Architekturę, kod i decyzje techniczne przechodzimy na żywo.',
+    en: 'Each of these projects shows a different set of skills: a different backend, a different data model, different demands. Most run inside client companies, so the functional layer — data, screens and business rules — stays theirs and previews are not public. The architecture, the code and the decisions behind them we walk through live.',
   },
   workNoteCta: { pl: 'Umówmy spotkanie', en: 'Set up a meeting' },
   statusPrivate: { pl: 'Prywatny SaaS', en: 'Private SaaS' },
   statusOngoing: { pl: 'W realizacji', en: 'In progress' },
-  statusForSale: { pl: 'Możliwa sprzedaż', en: 'Open to sell' },
+  statusForSale: { pl: 'Możliwa sprzedaż', en: 'For sale' },
+  /** Studio motto, repeated on every face of the flipping business card. */
+  motto: {
+    pl: 'Zamieniamy szalone pomysły w działające aplikacje.',
+    en: 'We turn your craziest ideas into real applications.',
+  },
   forSaleNote: {
     pl: 'Gotowy produkt — możemy wdrożyć go u Ciebie i dopasować do Twoich reguł.',
     en: 'A finished product — we can deploy it for you and fit it to your rules.',
@@ -338,7 +343,35 @@ export const t = {
     pl: 'Szukasz zespołu do zaprojektowania lub zbudowania produktu? Chętnie porozmawiamy.',
     en: 'Looking for a team to design or build a product? We’d love to talk.',
   },
-  email: { pl: 'Napisz e-mail', en: 'Send an email' },
+  email: { pl: 'Napisz do nas', en: 'Send a message' },
+  formTitle: { pl: 'Napisz do nas', en: 'Send us a message' },
+  formBody: {
+    pl: 'Odpowiadamy zwykle w ciągu jednego dnia roboczego.',
+    en: 'We usually reply within one business day.',
+  },
+  formName: { pl: 'Imię', en: 'Name' },
+  formEmail: { pl: 'E-mail', en: 'Email' },
+  formMessage: { pl: 'Wiadomość', en: 'Message' },
+  formNameHint: { pl: 'Jan Kowalski', en: 'Alex Smith' },
+  formEmailHint: { pl: 'jan@firma.pl', en: 'alex@company.com' },
+  formMessageHint: { pl: 'Nad czym pracujesz?', en: 'What are you working on?' },
+  formSend: { pl: 'Wyślij wiadomość', en: 'Send message' },
+  formSending: { pl: 'Wysyłanie…', en: 'Sending…' },
+  formSentTitle: { pl: 'Wiadomość wysłana', en: 'Message sent' },
+  formSentBody: {
+    pl: 'Dzięki — odpowiemy na podany adres.',
+    en: 'Thanks — we’ll reply to the address you gave us.',
+  },
+  formFailed: {
+    pl: 'Nie udało się wysłać wiadomości. Spróbuj ponownie albo napisz bezpośrednio na adres poniżej.',
+    en: 'The message could not be sent. Try again, or write to the address below.',
+  },
+  formMailFallback: {
+    pl: 'Otworzyliśmy Twój program pocztowy z gotową treścią — wyślij wiadomość stamtąd.',
+    en: 'We opened your mail app with the message ready — send it from there.',
+  },
+  formRetry: { pl: 'Spróbuj ponownie', en: 'Try again' },
+  formOr: { pl: 'albo napisz wprost:', en: 'or write directly:' },
   close: { pl: 'Zamknij', en: 'Close' },
   aboutSectionTitle: { pl: 'O nas', en: 'About us' },
   aboutSectionBody: {

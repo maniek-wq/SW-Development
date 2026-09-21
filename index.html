@@ -6,10 +6,207 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><!-- figma:title --></title>
     <!-- figma:head-end -->
+    <style>
+      /* Boot screen. Inline on purpose: a loader shipped inside the bundle would
+         only appear after the bundle it is meant to cover has already arrived. */
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: #0e1116;
+        font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+        transition: opacity 0.45s ease;
+      }
+      #boot[data-leaving='true'] {
+        opacity: 0;
+        pointer-events: none;
+      }
+      /* Background loop. Decorative only: it is never waited on, so a slow or
+         blocked video just leaves the terminal on a flat dark field. */
+      #boot-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.85;
+      }
+      /* Vignette only — the log gets its own backing plate instead of drowning
+         the whole clip to stay readable. */
+      #boot-veil {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at center, rgba(14, 17, 22, 0.15) 0%, rgba(14, 17, 22, 0.82) 80%);
+      }
+      .boot-panel {
+        position: relative;
+        width: 100%;
+        max-width: 440px;
+        padding: 22px 24px 18px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        background: rgba(11, 13, 18, 0.86);
+        backdrop-filter: blur(8px);
+      }
+      .boot-cmd {
+        color: #6f7784;
+        font-size: 12px;
+        line-height: 1.9;
+      }
+      .boot-cmd b {
+        color: #f1f3f7;
+        font-weight: 500;
+      }
+      .boot-log {
+        margin: 10px 0 18px;
+        min-height: 92px;
+        font-size: 12px;
+        line-height: 1.9;
+        color: #9aa1ad;
+      }
+      .boot-log div {
+        opacity: 0;
+        transform: translateY(3px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+      }
+      .boot-log div[data-on='true'] {
+        opacity: 1;
+        transform: none;
+      }
+      .boot-log i {
+        color: #0f9d6a;
+        font-style: normal;
+      }
+      .boot-track {
+        height: 2px;
+        background: #2b303b;
+        overflow: hidden;
+      }
+      .boot-fill {
+        height: 100%;
+        width: 0;
+        background: #4f46e5;
+        transition: width 0.3s ease;
+      }
+      .boot-foot {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #5a6270;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot {
+          display: none;
+        }
+      }
+    </style>
   </head>
   <body>
     <!-- figma:body-start -->
     <div id="root"></div>
+
+    <div id="boot" aria-hidden="true">
+      <!-- Our own desk, filmed in-house (IMG_5538): this portfolio on the left
+           screen while it was being built. Re-encoded from HEVC to H.264 for
+           browser support. No stock footage, no licence to track. -->
+      <video id="boot-video" autoplay muted loop playsinline preload="auto">
+        <source src="/boot/dev-loop.mp4" type="video/mp4" />
+      </video>
+      <div id="boot-veil"></div>
+      <div class="boot-panel">
+        <p class="boot-cmd">
+          <span style="color: #4f46e5">~</span> sw-development $ <b>pnpm build</b>
+        </p>
+        <div class="boot-log">
+          <div data-step>resolving dependencies</div>
+          <div data-step>compiling components</div>
+          <div data-step>optimizing assets</div>
+          <div data-step><i>ready</i> <span data-ms>—</span></div>
+        </div>
+        <div class="boot-track"><div class="boot-fill" id="boot-fill"></div></div>
+        <div class="boot-foot">
+          <span>SW Development</span>
+          <span>skip · press any key</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      ;(function () {
+        var boot = document.getElementById('boot')
+        if (!boot) return
+
+        // ?boot=1 replays the intro in a tab that has already seen it — handy for
+        // demoing it, and for developing it behind Vite's reloads.
+        var forced = location.search.indexOf('boot=1') > -1
+
+        // Seen this session, or the visitor asked for less motion: never show it.
+        var quiet = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        var seen = false
+        try {
+          seen = sessionStorage.getItem('sw-boot') === '1'
+        } catch (e) {}
+        if (!forced && (seen || quiet)) {
+          boot.remove()
+          return
+        }
+        try {
+          sessionStorage.setItem('sw-boot', '1')
+        } catch (e) {}
+
+        var MIN_MS = 1400
+        var started = Date.now()
+        var steps = boot.querySelectorAll('[data-step]')
+        var fill = document.getElementById('boot-fill')
+        var done = false
+        var timers = []
+
+        for (var i = 0; i < steps.length - 1; i++) {
+          ;(function (index) {
+            timers.push(
+              setTimeout(function () {
+                steps[index].setAttribute('data-on', 'true')
+                fill.style.width = (index + 1) * 28 + '%'
+              }, 160 + index * 190)
+            )
+          })(i)
+        }
+
+        function finish() {
+          if (done) return
+          done = true
+          timers.forEach(clearTimeout)
+          for (var i = 0; i < steps.length; i++) steps[i].setAttribute('data-on', 'true')
+          boot.querySelector('[data-ms]').textContent = 'in ' + Math.round(performance.now()) + ' ms'
+          fill.style.width = '100%'
+          setTimeout(function () {
+            boot.setAttribute('data-leaving', 'true')
+            setTimeout(function () {
+              boot.remove()
+            }, 500)
+          }, 260)
+        }
+
+        // Leaves once the app is actually mounted AND the intro has had its moment.
+        window.addEventListener('sw-app-ready', function () {
+          var waited = Date.now() - started
+          setTimeout(finish, Math.max(0, MIN_MS - waited))
+        })
+
+        // Any input skips it; the timeout keeps a broken bundle from trapping the page.
+        document.addEventListener('keydown', finish, { once: true })
+        boot.addEventListener('click', finish, { once: true })
+        setTimeout(finish, 6000)
+      })()
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
     <!-- figma:body-end -->
   </body>

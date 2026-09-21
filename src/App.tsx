@@ -217,6 +217,7 @@ export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [filter, setFilter] = useState<'all' | Project['category']>('all')
   const [open, setOpen] = useState<Project | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
 
   useEffect(() => {
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -329,13 +330,14 @@ export default function App() {
         </Reveal>
 
         <Reveal>
-          <Contact lang={lang} />
+          <Contact lang={lang} onOpenForm={() => setFormOpen(true)} />
         </Reveal>
       </main>
 
       <Footer lang={lang} />
 
       {open && <CaseStudy p={open} lang={lang} onClose={() => setOpen(null)} />}
+      {formOpen && <ContactDialog lang={lang} onClose={() => setFormOpen(false)} />}
     </div>
   )
 }
@@ -812,13 +814,17 @@ function FlipCard({ lang }: { lang: Lang }) {
         </div>
 
         <div className="relative z-10">
-          <p className="font-display text-lg font-semibold leading-tight tracking-tight text-[var(--color-ink)] xl:text-xl">
+          {/* The studio name pings like a radar contact; the people's names stay put. */}
+          <p
+            className={`font-display text-lg font-semibold leading-tight tracking-tight text-[var(--color-ink)] xl:text-xl ${
+              data.theme === 'studio' ? '[animation:radar-ping_2.6s_ease-out_infinite]' : ''
+            }`}
+          >
             {resolve(data.name)}
           </p>
-          <p
-            className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] xl:text-[11px]"
-            style={{ color: hue }}
-          >
+          {/* The hue lives on the badge, the chips and the texture; on text this
+              small it fails contrast against the dark surface, so the role is ink. */}
+          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink)] xl:text-[11px]">
             {resolve(data.role)}
           </p>
           <div className="mt-3 flex flex-wrap gap-1">
@@ -832,6 +838,12 @@ function FlipCard({ lang }: { lang: Lang }) {
               </span>
             ))}
           </div>
+
+          {/* The same line on every face, so it reads as the studio's motto
+              rather than a caption belonging to one person. */}
+          <p className="mt-3 border-t border-[var(--color-line)] pt-2.5 text-[10px] font-medium leading-snug text-[var(--color-ink)] xl:text-[11px]">
+            {t.motto[lang]}
+          </p>
         </div>
       </div>
     )
@@ -1214,9 +1226,230 @@ function Meta({ label, value }: { label: string; value: string }) {
   )
 }
 
+/* ---------------------------------------------------------- ContactForm */
+
+const CONTACT_EMAIL = 'hello@swdevelopment.dev'
+
+/**
+ * Formspree endpoint, e.g. https://formspree.io/f/xyzabcd — set
+ * VITE_FORMSPREE_ENDPOINT in the deployment environment. Without it the form
+ * falls back to opening the visitor's mail client, so the dialog is never a
+ * dead end.
+ */
+const FORM_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT as string | undefined
+
+type SendState = 'idle' | 'sending' | 'sent' | 'mailed' | 'failed'
+
+function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const firstFieldRef = useRef<HTMLInputElement>(null)
+  const [state, setState] = useState<SendState>('idle')
+
+  useEffect(() => {
+    // Hand focus to the dialog, give it back to whatever opened it, and keep
+    // the page behind from scrolling while it is open.
+    const opener = document.activeElement as HTMLElement | null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    firstFieldRef.current?.focus()
+    return () => {
+      document.body.style.overflow = previousOverflow
+      opener?.focus?.()
+    }
+  }, [])
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      onClose()
+      return
+    }
+    if (e.key !== 'Tab') return
+    const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([type="hidden"]), textarea, [tabindex]:not([tabindex="-1"])'
+    )
+    if (!focusable || focusable.length === 0) return
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = e.currentTarget
+    const data = new FormData(form)
+
+    if (!FORM_ENDPOINT) {
+      const subject = encodeURIComponent(`${t.formTitle[lang]} — ${data.get('name') ?? ''}`)
+      const body = encodeURIComponent(`${data.get('message') ?? ''}\n\n${data.get('email') ?? ''}`)
+      window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`
+      setState('mailed')
+      return
+    }
+
+    setState('sending')
+    try {
+      const response = await fetch(FORM_ENDPOINT, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: data,
+      })
+      setState(response.ok ? 'sent' : 'failed')
+    } catch {
+      setState('failed')
+    }
+  }
+
+  // Floating label: the label rests inside the empty field and rides up into the
+  // top border once the field is focused or filled. The hint only shows on focus,
+  // so it never collides with the resting label.
+  const fieldClass =
+    'peer w-full rounded-xl border border-[var(--color-line-strong)] bg-transparent px-3.5 py-3 text-sm text-[var(--color-ink)] outline-none transition-colors placeholder:text-[var(--color-ink-faint)] placeholder:opacity-0 focus:border-[var(--color-accent)] focus:placeholder:opacity-100'
+  const labelBase =
+    'pointer-events-none absolute left-2.5 z-10 px-1 text-sm text-[var(--color-ink-faint)] transition-all duration-150'
+  const labelFloat =
+    'peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:-translate-y-1/2 peer-[:not(:placeholder-shown)]:bg-[var(--color-surface)] peer-[:not(:placeholder-shown)]:text-[11px] peer-focus:top-0 peer-focus:-translate-y-1/2 peer-focus:bg-[var(--color-surface)] peer-focus:text-[11px] peer-focus:font-medium peer-focus:text-[var(--color-accent)]'
+  const inputLabelClass = `${labelBase} top-1/2 -translate-y-1/2 ${labelFloat}`
+  const textareaLabelClass = `${labelBase} top-3 ${labelFloat}`
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center sm:p-6" onKeyDown={onKeyDown}>
+      <div
+        className="absolute inset-0 bg-[rgba(18,20,25,0.6)]"
+        style={{ animation: 'fade-in 0.25s ease' }}
+        onClick={onClose}
+      />
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="contact-form-title"
+        className="relative flex max-h-[92vh] w-full max-w-md flex-col overflow-y-auto rounded-t-3xl bg-[var(--color-surface)] p-6 shadow-2xl sm:rounded-3xl sm:p-8"
+        style={{ animation: 'tour-pop 0.3s cubic-bezier(0.22,1,0.36,1)' }}
+      >
+        <button
+          onClick={onClose}
+          aria-label={t.close[lang]}
+          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-canvas)] hover:text-[var(--color-ink)]"
+        >
+          ✕
+        </button>
+
+        {state === 'sent' || state === 'mailed' ? (
+          <div className="py-6 text-center">
+            <span
+              className="mx-auto flex h-12 w-12 items-center justify-center rounded-full text-2xl"
+              style={{ background: 'color-mix(in srgb, var(--color-positive) 16%, transparent)' }}
+              aria-hidden="true"
+            >
+              ✓
+            </span>
+            <h2 id="contact-form-title" className="mt-4 font-display text-xl font-semibold tracking-tight">
+              {t.formSentTitle[lang]}
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-soft)]">
+              {state === 'mailed' ? t.formMailFallback[lang] : t.formSentBody[lang]}
+            </p>
+            <button
+              onClick={onClose}
+              className="mt-6 rounded-xl bg-[var(--color-ink)] px-5 py-2.5 text-sm font-semibold text-[var(--color-canvas)] transition-all hover:brightness-125 active:scale-[0.98]"
+            >
+              {t.close[lang]}
+            </button>
+          </div>
+        ) : (
+          <>
+            <h2 id="contact-form-title" className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
+              {t.formTitle[lang]}
+            </h2>
+            <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-ink-soft)]">{t.formBody[lang]}</p>
+
+            <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+              {/* Bot bait: Formspree drops anything that fills this in. */}
+              <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+
+              <div className="relative">
+                <input
+                  ref={firstFieldRef}
+                  id="contact-name"
+                  name="name"
+                  required
+                  autoComplete="name"
+                  placeholder={t.formNameHint[lang]}
+                  className={fieldClass}
+                />
+                <label htmlFor="contact-name" className={inputLabelClass}>
+                  {t.formName[lang]}
+                </label>
+              </div>
+
+              <div className="relative">
+                <input
+                  id="contact-email"
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder={t.formEmailHint[lang]}
+                  className={fieldClass}
+                />
+                <label htmlFor="contact-email" className={inputLabelClass}>
+                  {t.formEmail[lang]}
+                </label>
+              </div>
+
+              <div className="relative">
+                <textarea
+                  id="contact-message"
+                  name="message"
+                  required
+                  rows={4}
+                  placeholder={t.formMessageHint[lang]}
+                  className={`resize-y ${fieldClass}`}
+                />
+                <label htmlFor="contact-message" className={textareaLabelClass}>
+                  {t.formMessage[lang]}
+                </label>
+              </div>
+
+              {state === 'failed' && (
+                <p role="alert" className="text-sm leading-relaxed text-[var(--color-warn)]">
+                  {t.formFailed[lang]}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={state === 'sending'}
+                className="mt-1 rounded-xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {state === 'sending' ? t.formSending[lang] : state === 'failed' ? t.formRetry[lang] : t.formSend[lang]}
+              </button>
+            </form>
+
+            <p className="mt-5 text-center font-mono text-xs text-[var(--color-ink-faint)]">
+              {t.formOr[lang]}{' '}
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="text-[var(--color-ink-soft)] underline underline-offset-4 transition-colors hover:text-[var(--color-ink)]"
+              >
+                {CONTACT_EMAIL}
+              </a>
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
 /* --------------------------------------------------------------- Contact */
 
-function Contact({ lang }: { lang: Lang }) {
+function Contact({ lang, onOpenForm }: { lang: Lang; onOpenForm: () => void }) {
   return (
     <section
       id="contact"
@@ -1229,13 +1462,18 @@ function Contact({ lang }: { lang: Lang }) {
       <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-white/70 sm:text-base">
         {t.contactBody[lang]}
       </p>
-      <a
-        href="mailto:hello@swdevelopment.dev"
+      <button
+        onClick={onOpenForm}
         className="mt-7 inline-block rounded-xl bg-white px-6 py-3 text-sm font-semibold text-[#14161a] transition-transform hover:scale-[1.02] active:scale-[0.98]"
       >
         {t.email[lang]}
-      </a>
-      <p className="mt-6 font-mono text-xs text-white/50">hello@swdevelopment.dev</p>
+      </button>
+      {/* The address stays visible: some people would rather use their own mail client. */}
+      <p className="mt-6 font-mono text-xs text-white/50">
+        <a href={`mailto:${CONTACT_EMAIL}`} className="transition-colors hover:text-white/80">
+          {CONTACT_EMAIL}
+        </a>
+      </p>
     </section>
   )
 }

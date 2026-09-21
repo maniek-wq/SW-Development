@@ -120,3 +120,24 @@ body {
     transform: translateY(0);
   }
 }
+
+/* "SW Development" on the card's cover face: a radar blip — a fast flash to
+   red, then a slow fade back to the ink colour of the current theme. */
+@keyframes radar-ping {
+  0% {
+    color: var(--color-ink);
+    text-shadow: none;
+  }
+  5% {
+    color: #e11d48;
+    text-shadow: 0 0 12px rgba(225, 29, 72, 0.55);
+  }
+  40% {
+    color: var(--color-ink);
+    text-shadow: none;
+  }
+  100% {
+    color: var(--color-ink);
+    text-shadow: none;
+  }
+}
