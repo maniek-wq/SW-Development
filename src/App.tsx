@@ -1106,7 +1106,7 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
           {p.status === 'private' || !p.image ? (
             <LockedCover color={p.color} label={t.previewBlocked[lang]} />
           ) : (
-            <img src={p.image} alt={p.name[lang]} className="h-full w-full object-cover" />
+            <img src={p.image} alt={p.name[lang]} className="h-full w-full object-cover object-top" />
           )}
           <button
             onClick={onClose}
