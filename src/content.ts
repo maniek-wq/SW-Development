@@ -2,6 +2,16 @@ import jakubPhoto from './img/jakub-wasilewski.jpg'
 import shotClinic from './img/clinic-calendar.jpg'
 import shotTraining from './img/training-reports.jpg'
 import shotGame from './img/party-game.jpg'
+import shotChartScanner from './img/chart-scanner.jpg'
+import shotMkCycling from './img/mkcycling.jpg'
+import shotPixelBites from './img/pixel-bites.jpg'
+import shotRestaurantSystem from './img/restaurant-system.jpg'
+import shotBistro from './img/bistro.jpg'
+import shotIceCream from './img/lody.jpg'
+import shotPizza from './img/pizza.jpg'
+import shotSplitDeBill from './img/splitdebill.jpg'
+import shotExplorePoland from './img/explore-poland.jpg'
+import mikolajPhoto from './img/mikolaj-sitek.jpg'
 
 export type Lang = 'pl' | 'en'
 export type LS = Record<Lang, string>
@@ -273,6 +283,306 @@ export const projects: Project[] = [
       en: 'A restaurant site wired to a booking system where staff run everything from one panel: tables and rooms, a categorised menu, opening hours, confirmations and daily reports. The panel is a separate app installable on a phone, with a forced update prompt shown only to staff — an installed PWA has no refresh button, so an admin who postpones an update can get stuck on an old version with no way out.',
     },
   },
+  {
+    id: 'chart-scanner',
+    name: { pl: 'Skaner Biznesowy', en: 'Business Scanner' },
+    category: 'mobile',
+    year: '2026',
+    image: shotChartScanner,
+    color: '#0ea5e9',
+    tagline: {
+      pl: 'Zdjęcie wykresu z dowolnej platformy, a w kilka sekund analiza AI: trend, formacja i poziomy cenowe.',
+      en: 'A photo of a chart from any platform, and seconds later an AI read: trend, pattern and price levels.',
+    },
+    role: { pl: 'Projekt, aplikacja i backend', en: 'Design, app & backend' },
+    stack: ['React Native + Expo', 'Expo Router', 'TypeScript', 'Firebase (Auth, Firestore, Functions, Storage)', 'Gemini 2.5', 'RevenueCat', 'Jest'],
+    highlights: [
+      {
+        pl: 'Analiza wykresów akcji, ETF-ów, krypto, walut i surowców: trend, formacja techniczna, sugerowane wejście, cel i obrona oraz pewność analizy w procentach.',
+        en: 'Chart analysis for stocks, ETFs, crypto, currencies and commodities: trend, technical pattern, suggested entry, target and stop, plus a confidence score.',
+      },
+      {
+        pl: 'Dziennik inwestycji ze skutecznością, średnim zyskiem i seriami oraz asystent AI z symulatorem scenariuszy.',
+        en: 'An investment journal with win rate, average gain and streaks, plus an AI assistant with a scenario simulator.',
+      },
+      {
+        pl: 'Społeczność z kartami analiz i moderacją treści, a do tego subskrypcja PRO obsługiwana przez RevenueCat i Google Play.',
+        en: 'A community of shared analysis cards with content moderation, and a PRO subscription handled through RevenueCat and Google Play.',
+      },
+    ],
+    about: {
+      pl: 'Aplikacja mobilna dla inwestorów, opublikowana w Google Play. Użytkownik robi zdjęcie wykresu z dowolnego serwisu, a model Gemini rozpoznaje, co na nim widać, i zwraca analizę z poziomami cenowymi. Logika wrażliwa na koszty i uprawnienia działa w Cloud Functions, nie w aplikacji, a dostęp do danych w Firestore pilnują reguły bazy. Do publikacji przygotowaliśmy też stronę z polityką prywatności i regulaminem, której wymaga sklep.',
+      en: 'A mobile app for investors, published on Google Play. The user photographs a chart from any service, and a Gemini model reads it and returns an analysis with price levels. Logic that touches costs and permissions runs in Cloud Functions rather than in the app, and access to Firestore data is guarded by database rules. For the release we also shipped the privacy policy and terms site the store requires.',
+    },
+    liveUrl: 'https://play.google.com/store/apps/details?id=com.skanerbiznes.app',
+  },
+  {
+    id: 'mk-cycling',
+    name: { pl: 'MK Cycling — strona trenera kolarstwa', en: 'MK Cycling — cycling coach site' },
+    category: 'landing',
+    year: '2026',
+    image: shotMkCycling,
+    color: '#84cc16',
+    tagline: {
+      pl: 'Strona dla trenera kolarstwa szosowego, która ma zamieniać odwiedzających w podopiecznych.',
+      en: 'A site for a road cycling coach, built to turn visitors into athletes on his plan.',
+    },
+    role: { pl: 'Projekt i wdrożenie dla klienta', en: 'Design & build for a client' },
+    stack: ['React + Vite', 'TypeScript', 'Framer Motion', 'Cloudflare Turnstile', 'Google Tag Manager', 'Schema.org'],
+    highlights: [
+      {
+        pl: 'Realizacja dla prawdziwego klienta: trenera Marcina Karbowego z Poznania.',
+        en: 'Built for a real client: coach Marcin Karbowy from Poznań.',
+      },
+      {
+        pl: 'Formularz kontaktowy chroniony przez Cloudflare Turnstile zamiast uciążliwej CAPTCHY.',
+        en: 'A contact form protected by Cloudflare Turnstile instead of an annoying CAPTCHA.',
+      },
+      {
+        pl: 'Analityka w trybie zgody (Consent Mode): nic nie jest mierzone, dopóki odwiedzający nie zaakceptuje plików cookies.',
+        en: 'Analytics in Consent Mode: nothing is measured until the visitor accepts cookies.',
+      },
+    ],
+    about: {
+      pl: 'Strona wizytówka trenera kolarstwa szosowego, który układa indywidualne plany treningowe. Ton i wygląd są podporządkowane jednemu celowi: przekonać kolarza amatora, że trening pod jego pracę i rodzinę da lepsze wyniki niż kopiowanie gotowych planów. Pod spodem zadbaliśmy o rzeczy, których klient nie widzi, a które decydują o wynikach w Google: szybkie ładowanie głównego zdjęcia, dane strukturalne dla lokalnego wyszukiwania i zgodność z RODO.',
+      en: 'A showcase site for a road cycling coach who writes individual training plans. The tone and look serve one goal: convincing an amateur cyclist that training built around their job and family beats copying ready-made plans. Underneath, we took care of what the client never sees but what decides Google rankings: a fast-loading hero image, structured data for local search and GDPR compliance.',
+    },
+    liveUrl: 'https://mkcycling.pl/',
+  },
+  {
+    id: 'pixel-bites',
+    name: { pl: 'Pixel Bites — restauracja w stylu arcade', en: 'Pixel Bites — arcade-style restaurant' },
+    category: 'landing',
+    year: '2026',
+    image: shotPixelBites,
+    color: '#ec4899',
+    tagline: {
+      pl: 'Strona burgerowni zamieniona w grę retro: pixel art, neon i historia opowiadana przewijaniem.',
+      en: 'A burger joint’s site turned into a retro game: pixel art, neon and a story told by scrolling.',
+    },
+    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
+    stack: ['React 18 + Vite', 'TypeScript', 'GSAP ScrollTrigger', 'Three.js', 'Lenis'],
+    highlights: [
+      {
+        pl: 'Opowieść przewijana scena po scenie (GSAP ScrollTrigger) z płynnym przewijaniem (Lenis).',
+        en: 'A story told scene by scene on scroll (GSAP ScrollTrigger) with smooth scrolling (Lenis).',
+      },
+      {
+        pl: 'Tło 3D w WebGL (Three.js), własny kursor i przyciski przyciągane do kursora.',
+        en: 'A 3D WebGL background (Three.js), a custom cursor and magnetic buttons.',
+      },
+      {
+        pl: 'Interaktywne menu, wydarzenia, mapa dojazdu, karta lojalnościowa i FAQ, każda sekcja jako osobny komponent.',
+        en: 'An interactive menu, events, a location map, a loyalty pass and FAQ, each section its own component.',
+      },
+    ],
+    about: {
+      pl: 'Strona dla lokalu, który chce być zapamiętany. Zamiast klasycznego szablonu z galerią potraw odwiedzający przechodzi przez grę: wchodzi do restauracji, zagląda do kuchni i składa burgera warstwa po warstwie. Projekt pokazuje, jak daleko może pójść strona gastronomiczna, kiedy marka ma wyraźny charakter.',
+      en: 'A site for a venue that wants to be remembered. Instead of the usual template with a food gallery, the visitor plays through it: walks into the restaurant, peeks into the kitchen and stacks a burger layer by layer. It shows how far a restaurant site can go when the brand has a clear character.',
+    },
+    liveUrl: 'https://pixel-bites-tawny.vercel.app/',
+    repoUrl: 'https://github.com/Sitkowski01/pixel_bites',
+  },
+  {
+    id: 'restaurant-system',
+    name: { pl: 'La Maison Dorée — rezerwacje stolików', en: 'La Maison Dorée — table bookings' },
+    category: 'web',
+    year: '2026',
+    image: shotRestaurantSystem,
+    color: '#b8862f',
+    tagline: {
+      pl: 'Elegancka strona restauracji z rezerwacją, w której gość sam wybiera stolik na planie sali.',
+      en: 'An elegant restaurant site with bookings where guests pick their own table on the floor plan.',
+    },
+    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
+    stack: ['React 18 + Vite', 'TypeScript', 'React Router', 'Supabase Edge Functions', 'Tailwind CSS', 'Motion'],
+    highlights: [
+      {
+        pl: 'Rezerwacja w czterech krokach: termin, wybór stolika na planie sali, dane gościa i potwierdzenie.',
+        en: 'Booking in four steps: date and time, a table picked on the floor plan, guest details and confirmation.',
+      },
+      {
+        pl: 'Osobne widoki dla kelnera, managera i administratora.',
+        en: 'Separate views for waiters, managers and administrators.',
+      },
+      {
+        pl: 'Zapytania o wydarzenia prywatne, menu i galeria w jednej spójnej stylistyce.',
+        en: 'Private event enquiries, menu and gallery in one consistent style.',
+      },
+    ],
+    about: {
+      pl: 'Strona restauracji fine dining połączona z rezerwacjami. Gość nie wypełnia formularza w ciemno, tylko widzi salę i wybiera konkretny stolik, a obsługa dostaje rezerwacje w swoim panelu. Dane o stolikach i rezerwacjach trafiają do Supabase przez funkcję brzegową.',
+      en: 'A fine dining restaurant site wired to bookings. Guests do not fill in a blind form: they see the room and choose a specific table, while staff receive bookings in their own panel. Table and booking data reaches Supabase through an edge function.',
+    },
+    liveUrl: 'https://restaurant-design-ten.vercel.app/',
+    repoUrl: 'https://github.com/Sitkowski01/restaurantDesign',
+  },
+  {
+    id: 'bistro',
+    name: { pl: 'Bistro — strona kawiarni śniadaniowej', en: 'Bistro — breakfast café site' },
+    category: 'landing',
+    year: '2026',
+    image: shotBistro,
+    color: '#3f7d58',
+    tagline: {
+      pl: 'Jasna, apetyczna wizytówka lokalu: menu, miejsce, warsztaty i dojazd na jednej stronie.',
+      en: 'A bright, appetising venue site: menu, space, workshops and directions on one page.',
+    },
+    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
+    stack: ['React 18 + Vite', 'TypeScript', 'Tailwind CSS 4', 'Radix UI', 'Motion'],
+    highlights: [
+      {
+        pl: 'Wierne odwzorowanie projektu z Figmy, z dopracowanymi animacjami.',
+        en: 'A faithful build of the Figma design, with polished animations.',
+      },
+      {
+        pl: 'Układ responsywny od telefonu po duży ekran.',
+        en: 'A responsive layout from phone to large screen.',
+      },
+      {
+        pl: 'Gotowy szablon do szybkiego wdrożenia dla kawiarni, bistro albo piekarni.',
+        en: 'A ready template for a quick launch for a café, bistro or bakery.',
+      },
+    ],
+    about: {
+      pl: 'Strona dla małego lokalu gastronomicznego, który potrzebuje przede wszystkim dobrego pierwszego wrażenia i szybkiej odpowiedzi na pytania gościa: co podają, jak tam jest i jak dojechać. Tekst, zdjęcia i dane kontaktowe łatwo podmienić, więc stronę można wdrożyć dla nowego lokalu w kilka dni.',
+      en: 'A site for a small food venue that above all needs a good first impression and quick answers to a guest’s questions: what they serve, what the place feels like and how to get there. Copy, photos and contact details are easy to swap, so the site can launch for a new venue within days.',
+    },
+    liveUrl: 'https://bistro-restaurant-umber.vercel.app/',
+    repoUrl: 'https://github.com/Sitkowski01/bistroRestaurant',
+  },
+  {
+    id: 'ice-cream',
+    name: { pl: 'L’Artisan — lodziarnia z modelem 3D', en: 'L’Artisan — ice cream parlour in 3D' },
+    category: 'landing',
+    year: '2026',
+    image: shotIceCream,
+    color: '#c8a26b',
+    tagline: {
+      pl: 'Strona lodziarni, na której lód w rożku jest trójwymiarowym modelem poruszającym się razem z przewijaniem.',
+      en: 'An ice cream parlour site where the cone is a 3D model that moves as you scroll.',
+    },
+    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
+    stack: ['Vite', 'JavaScript', 'Three.js', 'GSAP ScrollTrigger'],
+    highlights: [
+      {
+        pl: 'Lód w rożku zbudowany w kodzie w Three.js, bez gotowego modelu z zewnątrz.',
+        en: 'The ice cream cone is built in code with Three.js, with no ready-made external model.',
+      },
+      {
+        pl: 'Animacja modelu sterowana przewijaniem (GSAP ScrollTrigger), która prowadzi przez kolejne sekcje.',
+        en: 'Scroll-driven model animation (GSAP ScrollTrigger) that leads through the sections.',
+      },
+      {
+        pl: 'Kolekcja smaków, sekcja o jakości i opinie klientów w eleganckiej, ciemnej stylistyce.',
+        en: 'A flavour collection, a quality section and customer reviews in an elegant dark style.',
+      },
+    ],
+    about: {
+      pl: 'Wizytówka rzemieślniczej lodziarni, w której produkt jest bohaterem strony dosłownie: trójwymiarowy lód obraca się i przesuwa w miarę przewijania, a treść układa się wokół niego. Lekki stos bez frameworka, dzięki czemu cała moc idzie w animację, a nie w narzut biblioteki.',
+      en: 'A showcase for an artisan ice cream parlour where the product is literally the star of the page: a 3D cone turns and moves as you scroll, with the content arranged around it. A light, framework-free stack, so the budget goes into the animation rather than library overhead.',
+    },
+    liveUrl: 'https://lody-page.vercel.app/',
+  },
+  {
+    id: 'pizzeria',
+    name: { pl: 'Inferno — pizzeria neapolitańska', en: 'Inferno — Neapolitan pizzeria' },
+    category: 'landing',
+    year: '2026',
+    image: shotPizza,
+    color: '#dc2626',
+    tagline: {
+      pl: 'Mocna, ciemna strona pizzerii z typografią, która krzyczy tak głośno jak piec opalany drewnem.',
+      en: 'A bold, dark pizzeria site with typography as loud as a wood-fired oven.',
+    },
+    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
+    stack: ['Next.js', 'React', 'Tailwind CSS'],
+    highlights: [
+      {
+        pl: 'Pełnoekranowe wejście z dużą typografią i zdjęciem w tle.',
+        en: 'A full-screen entrance with large typography over a background photo.',
+      },
+      {
+        pl: 'Przycisk rezerwacji stolika zawsze pod ręką w nawigacji.',
+        en: 'A table booking button always at hand in the navigation.',
+      },
+      {
+        pl: 'Gotowe podglądy do udostępniania w mediach społecznościowych (Open Graph).',
+        en: 'Ready-made previews for sharing on social media (Open Graph).',
+      },
+    ],
+    about: {
+      pl: 'Strona dla pizzerii neapolitańskiej, która chce wyróżnić się charakterem, a nie kolejnym zdjęciem margherity na białym tle. Stylistyka ognia i ciemnych barw, krótkie teksty i jeden główny cel: rezerwacja stolika.',
+      en: 'A site for a Neapolitan pizzeria that wants to stand out through character rather than yet another margherita on a white background. A fire-and-dark palette, short copy and one main goal: a table booking.',
+    },
+    liveUrl: 'https://inferno-pizza.vercel.app/',
+  },
+  {
+    id: 'splitdebill',
+    name: { pl: 'SplitDeBill — dzielenie rachunków', en: 'SplitDeBill — bill splitting' },
+    category: 'mobile',
+    year: '2026',
+    image: shotSplitDeBill,
+    color: '#84cc16',
+    status: 'ongoing',
+    tagline: {
+      pl: 'Zdjęcie paragonu, rozpoznane pozycje i rachunek podzielony między znajomych bez liczenia w głowie.',
+      en: 'Photograph the receipt, get the items recognised and split the bill between friends without mental maths.',
+    },
+    role: { pl: 'Backend, aplikacja mobilna i panel web', en: 'Backend, mobile app & web panel' },
+    stack: ['NestJS', 'Prisma', 'Tesseract OCR', 'React Native + Expo', 'NativeWind', 'React + Vite', 'Docker'],
+    highlights: [
+      {
+        pl: 'Rozpoznawanie pozycji z paragonu (OCR z modelami dla polskiego i angielskiego).',
+        en: 'Line items read from the receipt (OCR with Polish and English models).',
+      },
+      {
+        pl: 'Wspólne wyjazdy z wieloma walutami i podziałem po równo, ręcznie albo procentowo.',
+        en: 'Shared trips with multiple currencies, split equally, manually or by percentage.',
+      },
+      {
+        pl: 'Trzy warstwy jednego produktu: API, aplikacja mobilna i panel webowy.',
+        en: 'Three layers of one product: an API, a mobile app and a web panel.',
+      },
+    ],
+    about: {
+      pl: 'Aplikacja dla znajomych, którzy razem wyjeżdżają albo wychodzą na kolację i nie chcą potem liczyć, kto komu ile oddaje. Wystarczy zrobić zdjęcie paragonu, przypisać pozycje osobom, a aplikacja pilnuje salda i podpowiada, kto powinien zapłacić następny. Projekt jest w trakcie realizacji — podgląd udostępnimy po wdrożeniu.',
+      en: 'An app for friends who travel or eat out together and do not want to work out afterwards who owes whom. Photograph the receipt, assign items to people, and the app keeps the balance and suggests who should pay next. The project is still in progress — preview once it ships.',
+    },
+  },
+  {
+    id: 'explore-poland',
+    name: { pl: 'Eksploruj Polskę — planer wypraw', en: 'Explore Poland — trip planner' },
+    category: 'web',
+    year: '2026',
+    image: shotExplorePoland,
+    color: '#c2410c',
+    status: 'ongoing',
+    tagline: {
+      pl: 'Mapa atrakcji, planer tras i punkty za odwiedzone miejsca potwierdzone przez GPS.',
+      en: 'A map of attractions, a route planner and points for visits confirmed by GPS.',
+    },
+    role: { pl: 'Projekt, backend i frontend', en: 'Design, backend & front-end' },
+    stack: ['Next.js 15 + PWA', 'FastAPI', 'PostgreSQL + PostGIS', 'Google Maps Platform', 'OpenAI API', 'Docker'],
+    highlights: [
+      {
+        pl: 'Atrakcje na mapie z zapytaniami geograficznymi w PostGIS.',
+        en: 'Attractions on a map, backed by geographic queries in PostGIS.',
+      },
+      {
+        pl: 'Planer tras na Google Directions i weryfikacja wizyty przez GPS.',
+        en: 'A route planner on Google Directions and visit verification by GPS.',
+      },
+      {
+        pl: 'Grywalizacja: punkty, reputacja użytkowników i opisy atrakcji generowane przez AI.',
+        en: 'Gamification: points, user reputation and AI-generated attraction descriptions.',
+      },
+    ],
+    about: {
+      pl: 'Aplikacja do odkrywania atrakcji turystycznych w Polsce, która zamienia zwiedzanie w grę: zaplanuj trasę, odwiedź miejsce, potwierdź obecność telefonem i zbieraj punkty. Projekt jest w trakcie realizacji — podgląd udostępnimy po wdrożeniu.',
+      en: 'An app for discovering tourist attractions in Poland that turns sightseeing into a game: plan a route, visit a place, confirm you were there with your phone and collect points. The project is still in progress — preview once it ships.',
+    },
+  },
 ]
 
 /* ---------------------------------------------------------- UI strings */
@@ -432,7 +742,7 @@ export const teamMembers: TeamMember[] = [
       pl: 'Łączy myślenie produktowe z dbałością o każdy detal interfejsu.',
       en: 'Combines product thinking with care for every interface detail.'
     },
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&h=800&fit=crop',
+    image: mikolajPhoto,
     theme: 'design',
     stack: [
       { icon: 'figma', label: 'Figma' },
