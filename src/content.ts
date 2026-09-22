@@ -738,12 +738,12 @@ export const teamMembers: TeamMember[] = [
     name: { pl: 'Mikołaj Sitek', en: 'Mikołaj Sitek' },
     role: { pl: 'UX/UI & Front-end', en: 'UX/UI & Front-end' },
     education: {
-      pl: 'Mgr inż. informatyki (ZUT w Szczecinie), specjalizacja UX.',
-      en: 'MSc Eng. in Computer Science (ZUT Szczecin), UX specialisation.'
+      pl: 'Specjalizacja: UX i projektowanie zorientowane na użytkownika.',
+      en: 'Focus: UX and human-centred design.'
     },
     bio: {
-      pl: 'Projektuje interfejsy i sam je koduje — od makiety w Figmie po gotową stronę lub aplikację. Staże w GlobalLogic i Raven IT, własna aplikacja w Google Play.',
-      en: 'Designs interfaces and builds them himself — from a Figma mockup to a finished site or app. Internships at GlobalLogic and Raven IT, his own app on Google Play.'
+      pl: 'Zamienia potrzeby klienta w czytelne interfejsy — od makiety w Figmie po dopracowany detal na ekranie. Dba o to, żeby projekt nie tylko dobrze wyglądał, ale prowadził użytkownika prosto do celu.',
+      en: 'Turns client needs into clear interfaces — from a Figma mockup to the polished detail on screen. Makes sure a design does not just look good but leads users straight to their goal.'
     },
     image: mikolajPhoto,
     theme: 'design',
