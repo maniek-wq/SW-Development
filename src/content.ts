@@ -737,10 +737,13 @@ export const teamMembers: TeamMember[] = [
   {
     name: { pl: 'Mikołaj Sitek', en: 'Mikołaj Sitek' },
     role: { pl: 'UX/UI & Front-end', en: 'UX/UI & Front-end' },
-    education: { pl: 'Edukacja: do uzupełnienia', en: 'Education: to be added' },
+    education: {
+      pl: 'Mgr inż. informatyki (ZUT w Szczecinie), specjalizacja UX.',
+      en: 'MSc Eng. in Computer Science (ZUT Szczecin), UX specialisation.'
+    },
     bio: {
-      pl: 'Łączy myślenie produktowe z dbałością o każdy detal interfejsu.',
-      en: 'Combines product thinking with care for every interface detail.'
+      pl: 'Projektuje interfejsy i sam je koduje — od makiety w Figmie po gotową stronę lub aplikację. Staże w GlobalLogic i Raven IT, własna aplikacja w Google Play.',
+      en: 'Designs interfaces and builds them himself — from a Figma mockup to a finished site or app. Internships at GlobalLogic and Raven IT, his own app on Google Play.'
     },
     image: mikolajPhoto,
     theme: 'design',
@@ -789,10 +792,10 @@ export const services: ServiceEntry[] = [
     id: 'design',
     title: { pl: 'UX/UI Design & Strategia', en: 'UX/UI Design & Strategy' },
     description: { 
-      pl: 'Projektujemy interfejsy od makiet po pixel-perfect design. Proaktywnie proponujemy innowacyjne rozwiązania, ale zawsze uważnie słuchamy klienta, aby odpowiedzieć na realne potrzeby biznesowe.', 
-      en: 'We design interfaces from wireframes to pixel-perfect mockups. We proactively propose innovative solutions, but always listen closely to the client to answer real business needs.' 
+      pl: 'Projektujemy interfejsy od makiety po dopracowany projekt i od początku wiemy, jak zostaną zakodowane. Zaczynamy od potrzeb użytkowników i celów klienta, a pomysły sprawdzamy na klikalnym prototypie, zanim powstanie pierwsza linijka kodu.',
+      en: 'We design interfaces from wireframe to polished mockup, knowing from day one how they will be built. We start from users’ needs and the client’s goals, and test ideas on a clickable prototype before the first line of code.'
     },
-    skills: ['Figma', 'Prototyping', 'Design Systems', 'Workshops', 'User Research']
+    skills: ['Figma', 'Prototyping', 'Design Systems', 'UX Research', 'Human-centred design']
   },
   {
     id: 'development',
