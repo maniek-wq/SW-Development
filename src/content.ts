@@ -53,6 +53,72 @@ const img = (id: string, w = 900, h = 640) =>
 
 export const projects: Project[] = [
   {
+    id: 'dls',
+    name: { pl: 'System grafikowy DLS', en: 'DLS scheduling system' },
+    category: 'web',
+    year: '2026',
+    image: '',
+    color: '#334155',
+    status: 'private',
+    tagline: {
+      pl: 'Grafik pracy i flota pojazdów w jednym systemie, pisanym pod reguły firmy.',
+      en: 'Staff scheduling and vehicle fleet in one system, built around a company’s rules.',
+    },
+    role: { pl: 'Analiza, backend i frontend', en: 'Analysis, backend & front-end' },
+    stack: ['Angular 18', 'Tailwind CSS', 'Node + Express', 'MongoDB / Mongoose', 'Socket.IO', 'JWT', 'Playwright'],
+    highlights: [
+      {
+        pl: 'Układanie grafiku na podstawie dyspozycyjności zgłaszanej przez pracowników, z ewidencją godzin i nieobecności.',
+        en: 'Schedules built from availability submitted by staff, with hours and absences tracked alongside.',
+      },
+      {
+        pl: 'Ewidencja floty: przypisania pojazdów, pojazdy rezerwowe, warsztat i statusy dzienne.',
+        en: 'Fleet register: vehicle assignments, reserve vehicles, workshop flow and daily statuses.',
+      },
+      {
+        pl: 'Aplikacja mobile-first z komunikacją w czasie rzeczywistym i uprawnieniami rozdzielonymi per rola.',
+        en: 'A mobile-first app with real-time updates and permissions split per role.',
+      },
+    ],
+    about: {
+      pl: 'Wewnętrzny system dla firmy transportowej, w którym grafik pracy i zarządzanie flotą są jednym procesem, a nie dwoma osobnymi narzędziami. Zamiast uniwersalnego kalendarza aplikacja odwzorowuje reguły tej konkretnej firmy: sposób zbierania dyspozycyjności, zasady przydziału pojazdów, obieg zgłoszeń warsztatowych i rozliczanie czasu pracy. Projekt prywatny — podgląd i repozytorium pozostają niedostępne.',
+      en: 'An internal system for a transport company where staffing and fleet management are one process rather than two separate tools. Instead of a generic calendar, the app encodes this company’s own rules: how availability is collected, how vehicles are assigned, how workshop tickets travel and how working time is settled. A private project — preview and repository stay closed.',
+    },
+  },
+  {
+    id: 'clinic-calendar',
+    name: { pl: 'Kalendarz gabinetu', en: 'Clinic calendar' },
+    category: 'mobile',
+    year: '2026',
+    image: shotClinic,
+    color: '#4f46e5',
+    status: 'forSale',
+    tagline: {
+      pl: 'PWA prowadząca cały gabinet: rezerwacje, karnety, kartoteka i rozliczenia.',
+      en: 'A PWA running a whole clinic: bookings, passes, client records and billing.',
+    },
+    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
+    stack: ['React 18 + Vite', 'TypeScript', 'Supabase / PostgreSQL', 'Row Level Security', 'TanStack Query', 'Edge Functions (Deno)', 'Web Push', 'pgTAP', 'Vitest'],
+    highlights: [
+      {
+        pl: 'Podwójna rezerwacja jest niemożliwa dzięki wykluczającemu indeksowi w bazie — nie ma wyścigu, który da się przegrać po stronie klienta.',
+        en: 'Double booking is impossible thanks to an exclusion index in the database — there is no race the client could lose.',
+      },
+      {
+        pl: 'Statystyki i rozliczenia liczone funkcjami SQL, więc liczba na ekranie i liczba w raporcie nie mogą się rozjechać.',
+        en: 'Statistics and settlements are computed by SQL functions, so the number on screen and the number in the report cannot drift apart.',
+      },
+      {
+        pl: 'Autoryzacja egzekwowana przez bazę (RLS na każdej tabeli), z osobną bramką na raporty finansowe i testami polityk w pgTAP.',
+        en: 'Authorization enforced by the database (RLS on every table), with a separate gate on financial reports and policies tested in pgTAP.',
+      },
+    ],
+    about: {
+      pl: 'Odpowiednik kalendarza chmurowego, ale z regułami napisanymi pod konkretny model działania gabinetu — i to te reguły są treścią projektu. Serie cykliczne, karnety z rozliczaniem zużycia, rozliczenia z firmą jako płatnikiem oraz przypomnienia push wysyłane funkcją brzegową. Schemat rozwijany przyrostowo przez 39 wersjonowanych migracji, a typy TypeScript generowane wprost z bazy, więc kontrakt między bazą a frontendem sprawdza kompilator.',
+      en: 'A cloud-calendar equivalent, except the rules are written for one clinic’s way of working — and those rules are the substance of the project. Recurring series, passes with usage settlement, company-as-payer billing and push reminders sent from an edge function. The schema grew across 39 versioned migrations, with TypeScript types generated straight from the database, so the contract between database and front-end is checked by the compiler.',
+    },
+  },
+  {
     id: 'chart-scanner',
     name: { pl: 'Skaner Biznesowy', en: 'Business Scanner' },
     category: 'mobile',
@@ -120,72 +186,6 @@ export const projects: Project[] = [
     repoUrl: 'https://github.com/Sitkowski01/restaurantDesign',
   },
   {
-    id: 'dls',
-    name: { pl: 'System grafikowy DLS', en: 'DLS scheduling system' },
-    category: 'web',
-    year: '2026',
-    image: '',
-    color: '#334155',
-    status: 'private',
-    tagline: {
-      pl: 'Grafik pracy i flota pojazdów w jednym systemie, pisanym pod reguły firmy.',
-      en: 'Staff scheduling and vehicle fleet in one system, built around a company’s rules.',
-    },
-    role: { pl: 'Analiza, backend i frontend', en: 'Analysis, backend & front-end' },
-    stack: ['Angular 18', 'Tailwind CSS', 'Node + Express', 'MongoDB / Mongoose', 'Socket.IO', 'JWT', 'Playwright'],
-    highlights: [
-      {
-        pl: 'Układanie grafiku na podstawie dyspozycyjności zgłaszanej przez pracowników, z ewidencją godzin i nieobecności.',
-        en: 'Schedules built from availability submitted by staff, with hours and absences tracked alongside.',
-      },
-      {
-        pl: 'Ewidencja floty: przypisania pojazdów, pojazdy rezerwowe, warsztat i statusy dzienne.',
-        en: 'Fleet register: vehicle assignments, reserve vehicles, workshop flow and daily statuses.',
-      },
-      {
-        pl: 'Aplikacja mobile-first z komunikacją w czasie rzeczywistym i uprawnieniami rozdzielonymi per rola.',
-        en: 'A mobile-first app with real-time updates and permissions split per role.',
-      },
-    ],
-    about: {
-      pl: 'Wewnętrzny system dla firmy transportowej, w którym grafik pracy i zarządzanie flotą są jednym procesem, a nie dwoma osobnymi narzędziami. Zamiast uniwersalnego kalendarza aplikacja odwzorowuje reguły tej konkretnej firmy: sposób zbierania dyspozycyjności, zasady przydziału pojazdów, obieg zgłoszeń warsztatowych i rozliczanie czasu pracy. Projekt prywatny — podgląd i repozytorium pozostają niedostępne.',
-      en: 'An internal system for a transport company where staffing and fleet management are one process rather than two separate tools. Instead of a generic calendar, the app encodes this company’s own rules: how availability is collected, how vehicles are assigned, how workshop tickets travel and how working time is settled. A private project — preview and repository stay closed.',
-    },
-  },
-  {
-    id: 'clinic-calendar',
-    name: { pl: 'Kalendarz gabinetu', en: 'Clinic calendar' },
-    category: 'mobile',
-    year: '2026',
-    image: shotClinic,
-    color: '#4f46e5',
-    status: 'forSale',
-    tagline: {
-      pl: 'PWA prowadząca cały gabinet: rezerwacje, karnety, kartoteka i rozliczenia.',
-      en: 'A PWA running a whole clinic: bookings, passes, client records and billing.',
-    },
-    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
-    stack: ['React 18 + Vite', 'TypeScript', 'Supabase / PostgreSQL', 'Row Level Security', 'TanStack Query', 'Edge Functions (Deno)', 'Web Push', 'pgTAP', 'Vitest'],
-    highlights: [
-      {
-        pl: 'Podwójna rezerwacja jest niemożliwa dzięki wykluczającemu indeksowi w bazie — nie ma wyścigu, który da się przegrać po stronie klienta.',
-        en: 'Double booking is impossible thanks to an exclusion index in the database — there is no race the client could lose.',
-      },
-      {
-        pl: 'Statystyki i rozliczenia liczone funkcjami SQL, więc liczba na ekranie i liczba w raporcie nie mogą się rozjechać.',
-        en: 'Statistics and settlements are computed by SQL functions, so the number on screen and the number in the report cannot drift apart.',
-      },
-      {
-        pl: 'Autoryzacja egzekwowana przez bazę (RLS na każdej tabeli), z osobną bramką na raporty finansowe i testami polityk w pgTAP.',
-        en: 'Authorization enforced by the database (RLS on every table), with a separate gate on financial reports and policies tested in pgTAP.',
-      },
-    ],
-    about: {
-      pl: 'Odpowiednik kalendarza chmurowego, ale z regułami napisanymi pod konkretny model działania gabinetu — i to te reguły są treścią projektu. Serie cykliczne, karnety z rozliczaniem zużycia, rozliczenia z firmą jako płatnikiem oraz przypomnienia push wysyłane funkcją brzegową. Schemat rozwijany przyrostowo przez 39 wersjonowanych migracji, a typy TypeScript generowane wprost z bazy, więc kontrakt między bazą a frontendem sprawdza kompilator.',
-      en: 'A cloud-calendar equivalent, except the rules are written for one clinic’s way of working — and those rules are the substance of the project. Recurring series, passes with usage settlement, company-as-payer billing and push reminders sent from an edge function. The schema grew across 39 versioned migrations, with TypeScript types generated straight from the database, so the contract between database and front-end is checked by the compiler.',
-    },
-  },
-  {
     id: 'training-reports',
     name: { pl: 'Generator raportów treningowych', en: 'Training report generator' },
     category: 'web',
@@ -219,39 +219,6 @@ export const projects: Project[] = [
     },
   },
   {
-    id: 'party-game',
-    name: { pl: 'Gra towarzyska online', en: 'Online party game' },
-    category: 'web',
-    year: '2026',
-    image: shotGame,
-    color: '#e11d48',
-    status: 'forSale',
-    tagline: {
-      pl: 'Wieloosobowa gra przeglądarkowa typu „kto jest oszustem”, sześć trybów rozgrywki.',
-      en: 'A browser party game of “spot the impostor”, with six game modes.',
-    },
-    role: { pl: 'Serwer gry i interfejs', en: 'Game server & interface' },
-    stack: ['React + TypeScript', 'Node + Express', 'Socket.IO', 'Redis', 'JWT + bcrypt', 'i18n'],
-    highlights: [
-      {
-        pl: 'Serwer jest jedynym źródłem prawdy, a każdy gracz dostaje własny widok stanu — sekret nie trafia do przeglądarki kogoś, kto nie ma prawa go znać.',
-        en: 'The server is the only source of truth and every player gets their own view of state — the secret never reaches a browser with no right to it.',
-      },
-      {
-        pl: 'Zegary tury po stronie serwera z marginesem tolerancji, żeby gracze ze słabszym łączem nie tracili tur systematycznie.',
-        en: 'Server-side turn clocks with a tolerance margin, so players on slower connections do not lose turns systematically.',
-      },
-      {
-        pl: 'Rozłączenie jest regułą gry, a nie awarią: gracz offline dostaje skróconą turę, więc jedna zerwana sesja nie zatrzymuje stołu.',
-        en: 'A dropped connection is a rule of the game, not a failure: an offline player gets a shortened turn, so one lost session does not stall the table.',
-      },
-    ],
-    about: {
-      pl: 'Projekt dowodowy tego, że potrafię napisać autorytatywny serwer stanu w czasie rzeczywistym, a nie tylko CRUD. Gracze dołączają kodem pokoju, dostają hasło (poza oszustem), na zmianę dają wskazówki i głosują. Sześć trybów, m.in. wersja z rysowaniem zamiast słów, wariant ze zwiększoną liczbą oszustów i tryb współpracy. Warstwa trwałości jest wymienna — Redis albo plik JSON za jednym interfejsem — więc ta sama aplikacja uruchamia się lokalnie bez żadnej infrastruktury.',
-      en: 'A proof project for writing an authoritative real-time state server rather than another CRUD app. Players join with a room code, receive a password (except the impostor), take turns giving clues and vote. Six modes, including a drawing variant, a version with more impostors and a co-op mode. The persistence layer is swappable — Redis or a JSON file behind one interface — so the same app runs locally with no infrastructure at all.',
-    },
-  },
-  {
     id: 'service-reports',
     name: { pl: 'System raportów serwisowych', en: 'Field service reports' },
     category: 'web',
@@ -282,6 +249,39 @@ export const projects: Project[] = [
     about: {
       pl: 'System dla firmy serwisującej urządzenia techniczne w terenie: zlecenia, przydział techników, statusy i priorytety, a na końcu podpisany raport z numerem i ścieżką akceptacji. Bezpieczeństwo jest tu wymaganiem, nie dodatkiem — aplikacja odmawia startu przy słabych sekretach, tokeny odświeżające są rotowane i trzymane w bazie, a dziennik audytu zapisuje wartość przed i po, obejmując także nieudane logowania. Każdy punkt z audytu ma własny test E2E.',
       en: 'A system for a company servicing technical equipment in the field: work orders, technician assignment, statuses and priorities, ending in a signed, numbered report with an approval path. Security is a requirement rather than an add-on — the app refuses to start on weak secrets, refresh tokens are rotated and stored in the database, and the audit log records before and after values, including failed logins. Every audit point has its own end-to-end test.',
+    },
+  },
+  {
+    id: 'party-game',
+    name: { pl: 'Gra towarzyska online', en: 'Online party game' },
+    category: 'web',
+    year: '2026',
+    image: shotGame,
+    color: '#e11d48',
+    status: 'forSale',
+    tagline: {
+      pl: 'Wieloosobowa gra przeglądarkowa typu „kto jest oszustem”, sześć trybów rozgrywki.',
+      en: 'A browser party game of “spot the impostor”, with six game modes.',
+    },
+    role: { pl: 'Serwer gry i interfejs', en: 'Game server & interface' },
+    stack: ['React + TypeScript', 'Node + Express', 'Socket.IO', 'Redis', 'JWT + bcrypt', 'i18n'],
+    highlights: [
+      {
+        pl: 'Serwer jest jedynym źródłem prawdy, a każdy gracz dostaje własny widok stanu — sekret nie trafia do przeglądarki kogoś, kto nie ma prawa go znać.',
+        en: 'The server is the only source of truth and every player gets their own view of state — the secret never reaches a browser with no right to it.',
+      },
+      {
+        pl: 'Zegary tury po stronie serwera z marginesem tolerancji, żeby gracze ze słabszym łączem nie tracili tur systematycznie.',
+        en: 'Server-side turn clocks with a tolerance margin, so players on slower connections do not lose turns systematically.',
+      },
+      {
+        pl: 'Rozłączenie jest regułą gry, a nie awarią: gracz offline dostaje skróconą turę, więc jedna zerwana sesja nie zatrzymuje stołu.',
+        en: 'A dropped connection is a rule of the game, not a failure: an offline player gets a shortened turn, so one lost session does not stall the table.',
+      },
+    ],
+    about: {
+      pl: 'Projekt dowodowy tego, że potrafię napisać autorytatywny serwer stanu w czasie rzeczywistym, a nie tylko CRUD. Gracze dołączają kodem pokoju, dostają hasło (poza oszustem), na zmianę dają wskazówki i głosują. Sześć trybów, m.in. wersja z rysowaniem zamiast słów, wariant ze zwiększoną liczbą oszustów i tryb współpracy. Warstwa trwałości jest wymienna — Redis albo plik JSON za jednym interfejsem — więc ta sama aplikacja uruchamia się lokalnie bez żadnej infrastruktury.',
+      en: 'A proof project for writing an authoritative real-time state server rather than another CRUD app. Players join with a room code, receive a password (except the impostor), take turns giving clues and vote. Six modes, including a drawing variant, a version with more impostors and a co-op mode. The persistence layer is swappable — Redis or a JSON file behind one interface — so the same app runs locally with no infrastructure at all.',
     },
   },
   {
