@@ -53,6 +53,73 @@ const img = (id: string, w = 900, h = 640) =>
 
 export const projects: Project[] = [
   {
+    id: 'chart-scanner',
+    name: { pl: 'Skaner Biznesowy', en: 'Business Scanner' },
+    category: 'mobile',
+    year: '2026',
+    image: shotChartScanner,
+    color: '#0ea5e9',
+    tagline: {
+      pl: 'Zdjęcie wykresu z dowolnej platformy, a w kilka sekund analiza AI: trend, formacja i poziomy cenowe.',
+      en: 'A photo of a chart from any platform, and seconds later an AI read: trend, pattern and price levels.',
+    },
+    role: { pl: 'Projekt, aplikacja i backend', en: 'Design, app & backend' },
+    stack: ['React Native + Expo', 'Expo Router', 'TypeScript', 'Firebase (Auth, Firestore, Functions, Storage)', 'Gemini 2.5', 'RevenueCat', 'Jest'],
+    highlights: [
+      {
+        pl: 'Analiza wykresów akcji, ETF-ów, krypto, walut i surowców: trend, formacja techniczna, sugerowane wejście, cel i obrona oraz pewność analizy w procentach.',
+        en: 'Chart analysis for stocks, ETFs, crypto, currencies and commodities: trend, technical pattern, suggested entry, target and stop, plus a confidence score.',
+      },
+      {
+        pl: 'Dziennik inwestycji ze skutecznością, średnim zyskiem i seriami oraz asystent AI z symulatorem scenariuszy.',
+        en: 'An investment journal with win rate, average gain and streaks, plus an AI assistant with a scenario simulator.',
+      },
+      {
+        pl: 'Społeczność z kartami analiz i moderacją treści, a do tego subskrypcja PRO obsługiwana przez RevenueCat i Google Play.',
+        en: 'A community of shared analysis cards with content moderation, and a PRO subscription handled through RevenueCat and Google Play.',
+      },
+    ],
+    about: {
+      pl: 'Aplikacja mobilna dla inwestorów, opublikowana w Google Play. Użytkownik robi zdjęcie wykresu z dowolnego serwisu, a model Gemini rozpoznaje, co na nim widać, i zwraca analizę z poziomami cenowymi. Logika wrażliwa na koszty i uprawnienia działa w Cloud Functions, nie w aplikacji, a dostęp do danych w Firestore pilnują reguły bazy. Do publikacji przygotowaliśmy też stronę z polityką prywatności i regulaminem, której wymaga sklep.',
+      en: 'A mobile app for investors, published on Google Play. The user photographs a chart from any service, and a Gemini model reads it and returns an analysis with price levels. Logic that touches costs and permissions runs in Cloud Functions rather than in the app, and access to Firestore data is guarded by database rules. For the release we also shipped the privacy policy and terms site the store requires.',
+    },
+    liveUrl: 'https://play.google.com/store/apps/details?id=com.skanerbiznes.app',
+  },
+  {
+    id: 'restaurant-system',
+    name: { pl: 'La Maison Dorée — rezerwacje stolików', en: 'La Maison Dorée — table bookings' },
+    category: 'web',
+    year: '2026',
+    image: shotRestaurantSystem,
+    color: '#b8862f',
+    tagline: {
+      pl: 'Elegancka strona restauracji z rezerwacją, w której gość sam wybiera stolik na planie sali.',
+      en: 'An elegant restaurant site with bookings where guests pick their own table on the floor plan.',
+    },
+    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
+    stack: ['React 18 + Vite', 'TypeScript', 'React Router', 'Supabase Edge Functions', 'Tailwind CSS', 'Motion'],
+    highlights: [
+      {
+        pl: 'Rezerwacja w czterech krokach: termin, wybór stolika na planie sali, dane gościa i potwierdzenie.',
+        en: 'Booking in four steps: date and time, a table picked on the floor plan, guest details and confirmation.',
+      },
+      {
+        pl: 'Osobne widoki dla kelnera, managera i administratora.',
+        en: 'Separate views for waiters, managers and administrators.',
+      },
+      {
+        pl: 'Zapytania o wydarzenia prywatne, menu i galeria w jednej spójnej stylistyce.',
+        en: 'Private event enquiries, menu and gallery in one consistent style.',
+      },
+    ],
+    about: {
+      pl: 'Strona restauracji fine dining połączona z rezerwacjami. Gość nie wypełnia formularza w ciemno, tylko widzi salę i wybiera konkretny stolik, a obsługa dostaje rezerwacje w swoim panelu. Dane o stolikach i rezerwacjach trafiają do Supabase przez funkcję brzegową.',
+      en: 'A fine dining restaurant site wired to bookings. Guests do not fill in a blind form: they see the room and choose a specific table, while staff receive bookings in their own panel. Table and booking data reaches Supabase through an edge function.',
+    },
+    liveUrl: 'https://restaurant-design-ten.vercel.app/',
+    repoUrl: 'https://github.com/Sitkowski01/restaurantDesign',
+  },
+  {
     id: 'dls',
     name: { pl: 'System grafikowy DLS', en: 'DLS scheduling system' },
     category: 'web',
@@ -284,39 +351,6 @@ export const projects: Project[] = [
     },
   },
   {
-    id: 'chart-scanner',
-    name: { pl: 'Skaner Biznesowy', en: 'Business Scanner' },
-    category: 'mobile',
-    year: '2026',
-    image: shotChartScanner,
-    color: '#0ea5e9',
-    tagline: {
-      pl: 'Zdjęcie wykresu z dowolnej platformy, a w kilka sekund analiza AI: trend, formacja i poziomy cenowe.',
-      en: 'A photo of a chart from any platform, and seconds later an AI read: trend, pattern and price levels.',
-    },
-    role: { pl: 'Projekt, aplikacja i backend', en: 'Design, app & backend' },
-    stack: ['React Native + Expo', 'Expo Router', 'TypeScript', 'Firebase (Auth, Firestore, Functions, Storage)', 'Gemini 2.5', 'RevenueCat', 'Jest'],
-    highlights: [
-      {
-        pl: 'Analiza wykresów akcji, ETF-ów, krypto, walut i surowców: trend, formacja techniczna, sugerowane wejście, cel i obrona oraz pewność analizy w procentach.',
-        en: 'Chart analysis for stocks, ETFs, crypto, currencies and commodities: trend, technical pattern, suggested entry, target and stop, plus a confidence score.',
-      },
-      {
-        pl: 'Dziennik inwestycji ze skutecznością, średnim zyskiem i seriami oraz asystent AI z symulatorem scenariuszy.',
-        en: 'An investment journal with win rate, average gain and streaks, plus an AI assistant with a scenario simulator.',
-      },
-      {
-        pl: 'Społeczność z kartami analiz i moderacją treści, a do tego subskrypcja PRO obsługiwana przez RevenueCat i Google Play.',
-        en: 'A community of shared analysis cards with content moderation, and a PRO subscription handled through RevenueCat and Google Play.',
-      },
-    ],
-    about: {
-      pl: 'Aplikacja mobilna dla inwestorów, opublikowana w Google Play. Użytkownik robi zdjęcie wykresu z dowolnego serwisu, a model Gemini rozpoznaje, co na nim widać, i zwraca analizę z poziomami cenowymi. Logika wrażliwa na koszty i uprawnienia działa w Cloud Functions, nie w aplikacji, a dostęp do danych w Firestore pilnują reguły bazy. Do publikacji przygotowaliśmy też stronę z polityką prywatności i regulaminem, której wymaga sklep.',
-      en: 'A mobile app for investors, published on Google Play. The user photographs a chart from any service, and a Gemini model reads it and returns an analysis with price levels. Logic that touches costs and permissions runs in Cloud Functions rather than in the app, and access to Firestore data is guarded by database rules. For the release we also shipped the privacy policy and terms site the store requires.',
-    },
-    liveUrl: 'https://play.google.com/store/apps/details?id=com.skanerbiznes.app',
-  },
-  {
     id: 'mk-cycling',
     name: { pl: 'MK Cycling — strona trenera kolarstwa', en: 'MK Cycling — cycling coach site' },
     category: 'landing',
@@ -382,40 +416,6 @@ export const projects: Project[] = [
     },
     liveUrl: 'https://pixel-bites-tawny.vercel.app/',
     repoUrl: 'https://github.com/Sitkowski01/pixel_bites',
-  },
-  {
-    id: 'restaurant-system',
-    name: { pl: 'La Maison Dorée — rezerwacje stolików', en: 'La Maison Dorée — table bookings' },
-    category: 'web',
-    year: '2026',
-    image: shotRestaurantSystem,
-    color: '#b8862f',
-    tagline: {
-      pl: 'Elegancka strona restauracji z rezerwacją, w której gość sam wybiera stolik na planie sali.',
-      en: 'An elegant restaurant site with bookings where guests pick their own table on the floor plan.',
-    },
-    role: { pl: 'Projekt i wdrożenie', en: 'Design & build' },
-    stack: ['React 18 + Vite', 'TypeScript', 'React Router', 'Supabase Edge Functions', 'Tailwind CSS', 'Motion'],
-    highlights: [
-      {
-        pl: 'Rezerwacja w czterech krokach: termin, wybór stolika na planie sali, dane gościa i potwierdzenie.',
-        en: 'Booking in four steps: date and time, a table picked on the floor plan, guest details and confirmation.',
-      },
-      {
-        pl: 'Osobne widoki dla kelnera, managera i administratora.',
-        en: 'Separate views for waiters, managers and administrators.',
-      },
-      {
-        pl: 'Zapytania o wydarzenia prywatne, menu i galeria w jednej spójnej stylistyce.',
-        en: 'Private event enquiries, menu and gallery in one consistent style.',
-      },
-    ],
-    about: {
-      pl: 'Strona restauracji fine dining połączona z rezerwacjami. Gość nie wypełnia formularza w ciemno, tylko widzi salę i wybiera konkretny stolik, a obsługa dostaje rezerwacje w swoim panelu. Dane o stolikach i rezerwacjach trafiają do Supabase przez funkcję brzegową.',
-      en: 'A fine dining restaurant site wired to bookings. Guests do not fill in a blind form: they see the room and choose a specific table, while staff receive bookings in their own panel. Table and booking data reaches Supabase through an edge function.',
-    },
-    liveUrl: 'https://restaurant-design-ten.vercel.app/',
-    repoUrl: 'https://github.com/Sitkowski01/restaurantDesign',
   },
   {
     id: 'bistro',
