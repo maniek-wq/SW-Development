@@ -1,11 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- The SW mark for the browser tab: the letters drawn as strokes (a tab
-       icon cannot load the site's fonts) over the accent line, on the night
-       canvas of the Aurora look. -->
-  <rect width="64" height="64" rx="15" fill="#07060d"/>
-  <g fill="none" stroke="#f4f1ff" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M26.5 22.6C25 20.6 22.5 19.4 19.4 19.4 15.3 19.4 12.7 21.7 12.7 24.8c0 6.9 14.2 3.9 14.2 10.6 0 3.3-2.9 5.4-7.2 5.4-3.4 0-6.2-1.3-7.5-3.6"/>
-    <path d="M31.5 19.6l4.4 21 4.9-15.2 4.9 15.2 4.4-21"/>
+  <!-- The SW mark for the browser tab, with no background: the letters drawn
+       as strokes (a tab icon cannot load the site's fonts) over the accent
+       line. The letters follow the browser's theme, dark ink on a light tab
+       bar and light on a dark one, so they never vanish into it. -->
+  <style>
+    .ink { stroke: #16122b; }
+    .line { stroke: #7c3aed; }
+    @media (prefers-color-scheme: dark) {
+      .ink { stroke: #f4f1ff; }
+      .line { stroke: #7cf7d4; }
+    }
+  </style>
+  <g class="ink" fill="none" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M27.4 16.6C25.7 14.3 22.8 13 19.3 13 14.6 13 11.6 15.6 11.6 19.2c0 7.9 16.3 4.5 16.3 12.2 0 3.8-3.3 6.2-8.3 6.2-3.9 0-7.1-1.5-8.6-4.1"/>
+    <path d="M32.6 13.4l5 24.2 5.7-17.5 5.7 17.5 5-24.2"/>
   </g>
-  <path d="M14 49.5h36" stroke="#7cf7d4" stroke-width="3.6" stroke-linecap="round"/>
+  <path class="line" d="M11.5 50h41" stroke-width="4.4" stroke-linecap="round"/>
 </svg>
