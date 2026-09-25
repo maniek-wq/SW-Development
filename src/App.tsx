@@ -587,7 +587,7 @@ export default function App() {
       <div className="relative min-h-screen overflow-x-clip">
         <CursorGlow />
         <CommandPalette lang={lang} actions={paletteActions} />
-        <Header lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} skin={skin} setSkin={setSkin} />
+        <Header lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} />
         <ConceptDock skin={skin} setSkin={setSkin} lang={lang} />
 
         <main className="relative z-[2]">
@@ -803,26 +803,6 @@ function ConceptDock({ skin, setSkin, lang }: { skin: Skin; setSkin: (s: Skin) =
   )
 }
 
-/** Steps to the next look; shows the current one. */
-function SkinSwitch({ skin, setSkin, lang }: { skin: Skin; setSkin: (s: Skin) => void; lang: Lang }) {
-  const other: Skin = skins[(skins.indexOf(skin) + 1) % skins.length]
-  return (
-    <button
-      onClick={() => setSkin(other)}
-      title={lang === 'pl' ? `Zmień wygląd na: ${skinNames[other]}` : `Switch look to: ${skinNames[other]}`}
-      aria-label={lang === 'pl' ? `Wygląd strony: ${skinNames[skin]}. Zmień na ${skinNames[other]}` : `Site look: ${skinNames[skin]}. Switch to ${skinNames[other]}`}
-      className="group/skin flex h-9 items-center gap-2 rounded-full border border-[var(--color-line-strong)] pl-1 pr-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-ink)]"
-    >
-      <span
-        className="h-6 w-6 rounded-full border border-black/10 transition-transform duration-500 group-hover/skin:rotate-180"
-        style={{ background: `linear-gradient(135deg, ${skinSwatch[skin][0]} 50%, ${skinSwatch[skin][1]} 50%)` }}
-        aria-hidden="true"
-      />
-      {skinNames[skin]}
-    </button>
-  )
-}
-
 /** Width from which the section links sit in the bar instead of the menu. */
 const NAV_INLINE = 1280
 
@@ -852,15 +832,11 @@ function Header({
   setLang,
   theme,
   setTheme,
-  skin,
-  setSkin,
 }: {
   lang: Lang
   setLang: (l: Lang) => void
   theme: 'light' | 'dark'
   setTheme: (t: 'light' | 'dark') => void
-  skin: Skin
-  setSkin: (s: Skin) => void
 }) {
   // A masthead, like the top of a printed page: the brand, the sections, and
   // a hairline underneath that fills with the accent as you read down the page.
@@ -972,9 +948,6 @@ function Header({
 
           <div className="ml-auto flex items-center gap-4 xl:ml-1 xl:gap-3 xl:border-l xl:border-[var(--color-line)] xl:pl-5">
             {langSwitch}
-            <span className="hidden sm:flex">
-              <SkinSwitch skin={skin} setSkin={setSkin} lang={lang} />
-            </span>
             <button
               onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
               className="group/theme flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-ink)]/[0.06] hover:text-[var(--color-accent-ink)]"
@@ -1075,12 +1048,6 @@ function Header({
                 </motion.a>
               ))}
             </nav>
-            <div className="flex items-center gap-3 px-4 pb-4 sm:px-8">
-              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
-                {lang === 'pl' ? 'Wygląd' : 'Look'}
-              </span>
-              <SkinSwitch skin={skin} setSkin={setSkin} lang={lang} />
-            </div>
             <p className="px-4 pb-8 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink-faint)] sm:px-8">
               {t.brand[lang]} · {CONTACT_EMAIL}
             </p>
