@@ -1,5 +1,12 @@
-import { useEffect, useState, useRef, type ReactNode } from 'react'
-import { motion, useSpring, useMotionValueEvent } from 'framer-motion'
+import { useEffect, useMemo, useState, useRef, type ReactNode } from 'react'
+import {
+  motion,
+  MotionConfig,
+  useScroll,
+  useSpring,
+  AnimatePresence,
+  useReducedMotion,
+} from 'framer-motion'
 import {
   type Lang,
   type LS,
@@ -12,9 +19,20 @@ import {
   t,
   services,
   teamMembers,
-  processSteps,
-  testimonials,
+  shownTestimonials,
+  faq,
+  type FaqAuthor,
+  sectionKeys,
+  sectionNumbers,
 } from './content'
+import { SWMark, SectionHeader, finePointer, scrollToSection, useDragScroll } from './ui'
+import { isTypingTarget, useDialog } from './dialog'
+import HangingBadges from './components/HangingBadges'
+import AppBuilder from './components/AppBuilder'
+import ProcessStory from './components/ProcessStory'
+import BriefTicket from './components/BriefTicket'
+import CommandPalette, { paletteShortcut } from './components/CommandPalette'
+import IdeaPrompt from './components/IdeaPrompt'
 
 /* --------------------------------------------------------------- Reveal */
 
@@ -49,71 +67,123 @@ function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }
   )
 }
 
+/* --------------------------------------------------------- Page effects */
+
+function CursorGlow() {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !finePointer()) return
+    let raf = 0
+    const onMove = (e: MouseEvent) => {
+      if (raf) return
+      raf = requestAnimationFrame(() => {
+        el.style.setProperty('--mouse-x', `${e.clientX}px`)
+        el.style.setProperty('--mouse-y', `${e.clientY}px`)
+        el.style.opacity = '1'
+        raf = 0
+      })
+    }
+    const onLeave = () => (el.style.opacity = '0')
+    window.addEventListener('mousemove', onMove, { passive: true })
+    document.addEventListener('mouseleave', onLeave)
+    return () => {
+      if (raf) cancelAnimationFrame(raf)
+      window.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseleave', onLeave)
+    }
+  }, [])
+
+  return <div ref={ref} id="cursor-glow" aria-hidden="true" />
+}
+
+/**
+ * Pointer tilt with a moving glare, after the collectible card on
+ * sitekmikolaj.pl — dialled down so a grid of these stays calm.
+ */
+function Tilt({ children, className = '', max = 5 }: { children: ReactNode; className?: string; max?: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const reduce = useReducedMotion()
+  const spring = { stiffness: 160, damping: 18, mass: 0.4 }
+  const rotateX = useSpring(0, spring)
+  const rotateY = useSpring(0, spring)
+
+  const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = ref.current
+    if (!el || reduce || e.pointerType !== 'mouse') return
+    const r = el.getBoundingClientRect()
+    const px = (e.clientX - r.left) / r.width
+    const py = (e.clientY - r.top) / r.height
+    rotateX.set((0.5 - py) * max * 2)
+    rotateY.set((px - 0.5) * max * 2)
+    el.style.setProperty('--gx', `${px * 100}%`)
+    el.style.setProperty('--gy', `${py * 100}%`)
+    el.style.setProperty('--glare', '1')
+  }
+  const onLeave = () => {
+    rotateX.set(0)
+    rotateY.set(0)
+    ref.current?.style.setProperty('--glare', '0')
+  }
+
+  return (
+    <div style={{ perspective: 1200 }} className={className}>
+      <motion.div
+        ref={ref}
+        onPointerMove={onMove}
+        onPointerLeave={onLeave}
+        style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+        className="relative h-full"
+      >
+        {children}
+        <div
+          className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-300"
+          style={{
+            opacity: 'var(--glare, 0)',
+            background:
+              'radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,0.22), transparent 55%)',
+            mixBlendMode: 'soft-light',
+          }}
+          aria-hidden="true"
+        />
+      </motion.div>
+    </div>
+  )
+}
+
 /* --------------------------------------------------------------- About Us */
 
 function AboutUsSection({ lang }: { lang: Lang }) {
   return (
-    <section id="about" className="pt-20 pb-10">
-      <div className="mb-8">
-        <h2 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
-          {t.aboutSectionTitle[lang]}
-        </h2>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--color-ink-soft)] sm:text-base">
-          {t.aboutSectionBody[lang]}
-        </p>
+    <section id="about" className="pt-24 pb-10 sm:pt-32">
+      <SectionHeader
+        index={sectionNumbers.about}
+        label={t.sectionAbout[lang]}
+        title={t.aboutSectionTitle[lang]}
+        aside={t.aboutSectionBody[lang]}
+      />
+
+      <div className="mb-20">
+        <HangingBadges members={teamMembers} lang={lang} />
       </div>
 
-      <div className="mb-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {teamMembers.map((member) => (
-          <article key={member.name.en} className="group relative overflow-hidden rounded-2xl bg-[var(--color-line)] shadow-sm lg:aspect-square">
-            <div className="aspect-square overflow-hidden lg:absolute lg:inset-0 lg:aspect-auto">
-              <img
-                src={member.image}
-                alt={member.name[lang]}
-                className="h-full w-full object-cover grayscale transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"
-              />
-            </div>
-            {/* Static info below the photo on mobile / tablet (no hover available) */}
-            <div className="border-t border-[var(--color-line)] bg-[var(--color-surface)] p-5 text-[var(--color-ink)] lg:hidden">
-              <div>
-                <h3 className="font-display text-lg font-semibold">{member.name[lang]}</h3>
-                <span className="mt-1 block whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">{member.role[lang]}</span>
-              </div>
-              <div className="mt-4 space-y-2 border-t border-[var(--color-line)] pt-4 text-sm leading-relaxed text-[var(--color-ink-soft)]">
-                <p>{member.education[lang]}</p>
-                <p>{member.bio[lang]}</p>
-              </div>
-            </div>
-            {/* Hover-reveal overlay on large screens */}
-            <div className="absolute inset-x-0 bottom-0 hidden translate-y-[calc(100%-3.5rem)] border-t border-white/20 bg-[rgba(17,20,27,0.88)] p-5 text-white backdrop-blur-md transition-transform duration-500 ease-out group-hover:translate-y-0 lg:block">
-              <div>
-                <h3 className="font-display text-lg font-semibold">{member.name[lang]}</h3>
-                <span className="mt-1 block whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.12em] text-white/60">{member.role[lang]}</span>
-              </div>
-              <div className="mt-4 space-y-2 border-t border-white/15 pt-4 text-sm leading-relaxed text-white/80">
-                <p>{member.education[lang]}</p>
-                <p>{member.bio[lang]}</p>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid border-t border-[var(--color-line)] sm:grid-cols-2 lg:grid-cols-3">
         {services.map((item, i) => (
-          <div key={i} className="flex flex-col rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] p-6 transition-all hover:shadow-md">
-            <h3 className="font-display text-lg font-semibold text-[var(--color-ink)]">
-              {item.title[lang]}
+          <div
+            key={i}
+            className="group flex flex-col border-b border-[var(--color-line)] py-8 sm:px-6 sm:first:pl-0 lg:border-b-0 lg:border-r lg:last:border-r-0"
+          >
+            <span className="font-display text-sm italic text-[var(--color-accent-ink)]">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <h3 className="mt-3 font-display text-2xl font-normal text-[var(--color-ink)]">
+              <span className="accent-line accent-line-lead">{item.title[lang]}</span>
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-soft)]">
-              {item.description[lang]}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-1.5 pt-4" style={{ borderTop: '1px solid var(--color-line)' }}>
+            <p className="mt-3 text-sm leading-relaxed text-[var(--color-ink-soft)]">{item.description[lang]}</p>
+            <div className="mt-auto flex flex-wrap gap-x-3 gap-y-1.5 pt-6">
               {item.skills.map((skill) => (
-                <span
-                  key={skill}
-                  className="rounded-md bg-[var(--color-canvas)] px-2 py-1 font-mono text-[11px] text-[var(--color-ink-soft)]"
-                >
+                <span key={skill} className="font-mono text-[11px] text-[var(--color-ink-faint)]">
                   {skill}
                 </span>
               ))}
@@ -125,251 +195,656 @@ function AboutUsSection({ lang }: { lang: Lang }) {
   )
 }
 
-/* -------------------------------------------------------------- Process */
+/* -------------------------------------------------------------- Builder */
 
-function ProcessSection({ lang }: { lang: Lang }) {
+function BuilderSection({ lang, onOpen }: { lang: Lang; onOpen: (p: Project) => void }) {
   return (
-    <section id="process" className="py-16 sm:py-20">
-      <div className="flex flex-col gap-3 border-b border-[var(--color-line)] pb-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
-            {lang === 'pl' ? 'Jak współpracujemy' : 'How we work'}
-          </p>
-          <h2 className="mt-2 font-display text-xl font-semibold tracking-tight sm:text-2xl">
-            {lang === 'pl' ? 'Proces w stałym kontakcie' : 'A process built on close contact'}
-          </h2>
-        </div>
-        <p className="max-w-md text-sm leading-relaxed text-[var(--color-ink-soft)]">
-          {lang === 'pl'
-            ? 'Każdy etap ma jasny cel, wspólną decyzję i miejsce na Twoją informację zwrotną.'
-            : 'Every stage has a clear goal, a shared decision, and room for your feedback.'}
-        </p>
-      </div>
-
-      <div className="relative mt-8">
-        <div className="absolute left-0 right-0 top-4 hidden h-px bg-[var(--color-line)] lg:block" aria-hidden="true" />
-        <ol className="grid gap-0 border-l border-[var(--color-line)] pl-7 sm:grid-cols-2 sm:border-l-0 sm:pl-0 lg:grid-cols-5">
-          {processSteps.map((step, index) => (
-            <li key={step.id} className="relative pb-8 last:pb-0 sm:pr-8 sm:odd:pr-4 lg:pb-0 lg:pr-5">
-              <span className="absolute -left-[2.15rem] top-0 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-accent)] bg-[var(--color-surface)] font-mono text-[11px] font-semibold text-[var(--color-accent)] sm:-left-4 lg:left-0">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <div className="pt-10 lg:pt-14">
-                <h3 className="font-display text-base font-semibold text-[var(--color-ink)]">{step.title[lang]}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-soft)]">{step.description[lang]}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
+    <section id="stack" className="pt-10 pb-10 sm:pt-12">
+      <SectionHeader
+        index={sectionNumbers.stack}
+        label={t.nav.stack[lang]}
+        title={lang === 'pl' ? 'Złóż swoją aplikację' : 'Put your app together'}
+        aside={
+          lang === 'pl'
+            ? 'Zaznacz, czego potrzebujesz. Zobaczysz, jak to może wyglądać, czym to zbudujemy i gdzie już to zrobiliśmy.'
+            : 'Tick what you need. See how it could look, what we would build it with and where we have done it before.'
+        }
+      />
+      <AppBuilder lang={lang} onOpen={onOpen} />
     </section>
   )
 }
 
 /* ----------------------------------------------------------- Testimonials */
 
-function TestimonialsSection({ lang }: { lang: Lang }) {
+// Reference letters, the kind Polish businesses actually write: a stack of
+// paper, one on top, the rest fanned behind it. Click the stack, use the
+// arrows or the index, or (on touch) swipe the top letter away, and the next
+// one comes forward. Each letter is the client's words over a small
+// before / after record, signed with their role.
+function Signature({ seed }: { seed: number }) {
+  // A pen stroke, varied per letter so no two signatures are the same line.
+  const w = [8, 14, 6, 11, 9][seed % 5]
   return (
-    <section id="testimonials" className="pt-20 pb-10">
-      <div className="mb-8">
-        <h2 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
-          {t.testimonialsTitle[lang]}
-        </h2>
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--color-ink-soft)] sm:text-base">
-          {t.testimonialsBody[lang]}
-        </p>
-      </div>
+    <svg viewBox="0 0 160 44" className="h-10 w-36 text-[var(--color-ink)]" fill="none" aria-hidden="true">
+      <path
+        d={`M4 30 C 18 ${6 + w}, 26 40, 38 22 S 56 ${10 + w}, 62 30 S 80 36, 90 ${18 + w / 2} S 108 12, 116 28 S 138 34, 156 ${16 + w}`}
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
 
-      <div className="-mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-8 pt-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:snap-none sm:gap-6 sm:overflow-visible sm:px-0">
-        {testimonials.map((testim, i) => (
-          <div
-            key={i}
-            className="flex w-[85vw] shrink-0 snap-center flex-col justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] p-6 transition-all hover:-translate-y-1 hover:shadow-lg sm:w-auto"
-          >
-            <p className="text-sm italic leading-relaxed text-[var(--color-ink-soft)]">
-              "{testim.text[lang]}"
-            </p>
-            <div className="mt-8 flex items-center gap-3">
-              <img
-                src={testim.avatar}
-                alt={testim.name}
-                loading="lazy"
-                className="h-10 w-10 shrink-0 rounded-full bg-[var(--color-line)] object-cover grayscale transition-all hover:grayscale-0"
-              />
-              <div className="flex flex-col">
-                <span className="font-display text-sm font-semibold text-[var(--color-ink)]">
-                  {testim.name}
-                </span>
-                <span className="text-xs text-[var(--color-ink-faint)]">
-                  {testim.role[lang]}
-                </span>
-              </div>
-            </div>
+function TestimonialsSection({ lang }: { lang: Lang }) {
+  const letters = shownTestimonials
+  const [top, setTop] = useState(0)
+  const n = letters.length
+  const go = (d: number) => setTop((t) => (t + d + n) % n)
+  const L = letters[top]
+
+  return (
+    <section id="testimonials" className="pt-24 pb-10 sm:pt-32">
+      <SectionHeader
+        index={sectionNumbers.testimonials}
+        label={t.sectionTestimonials[lang]}
+        title={t.testimonialsTitle[lang]}
+        aside={t.testimonialsBody[lang]}
+      />
+
+      <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-16">
+        {/* The index of letters */}
+        <div className="order-2 lg:order-1">
+          <ol className="border-t border-[var(--color-line)]">
+            {letters.map((r, i) => (
+              <li key={r.projectId}>
+                <button
+                  onClick={() => setTop(i)}
+                  aria-current={i === top ? 'true' : undefined}
+                  className="group relative flex w-full items-baseline gap-4 border-b border-[var(--color-line)] py-3.5 text-left"
+                >
+                  {i === top && (
+                    <motion.span
+                      layoutId="letter-index"
+                      className="absolute -left-4 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-full bg-[var(--color-accent)] max-lg:hidden"
+                      transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                    />
+                  )}
+                  <span className={`font-mono text-[10px] ${i === top ? 'text-[var(--color-accent-ink)]' : 'text-[var(--color-ink-faint)]'}`}>
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span
+                    className={`font-display text-lg leading-tight transition-colors ${
+                      i === top ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-soft)] group-hover:text-[var(--color-ink)]'
+                    }`}
+                  >
+                    {r.sector[lang]}
+                  </span>
+                  <span className="ml-auto truncate font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink-faint)] max-sm:hidden">
+                    {r.role[lang]}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-5 flex items-center gap-3">
+            {[-1, 1].map((d) => (
+              <button
+                key={d}
+                onClick={() => go(d)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-line-strong)] text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-ink)]"
+                aria-label={d < 0 ? (lang === 'pl' ? 'Poprzedni list' : 'Previous letter') : lang === 'pl' ? 'Następny list' : 'Next letter'}
+              >
+                <span aria-hidden="true">{d < 0 ? '←' : '→'}</span>
+              </button>
+            ))}
+            <span className="ml-2 font-mono text-[11px] text-[var(--color-ink-faint)]">
+              {String(top + 1).padStart(2, '0')} / {String(n).padStart(2, '0')}
+            </span>
           </div>
-        ))}
+        </div>
+
+        {/* The stack */}
+        <div className="relative order-1 mx-auto w-full max-w-[460px] pb-6 pr-6 lg:order-2" aria-live="polite">
+          <div className="relative aspect-[1/1.18] w-full sm:aspect-[1/1.12]">
+            {letters.map((r, i) => {
+              const depth = (i - top + n) % n
+              const onTop = depth === 0
+              return (
+                <motion.article
+                  key={r.projectId}
+                  aria-hidden={!onTop}
+                  onClick={() => !onTop && setTop(i)}
+                  drag={onTop ? 'x' : false}
+                  dragSnapToOrigin
+                  onDragEnd={(_, info) => Math.abs(info.offset.x) > 90 && go(info.offset.x < 0 ? 1 : -1)}
+                  animate={{
+                    x: depth * 12,
+                    y: depth * 10,
+                    rotate: onTop ? -1.2 : [0, 2.2, -1.6, 3, -2.4][depth % 5],
+                    scale: 1 - Math.min(depth, 3) * 0.035,
+                    opacity: depth > 3 ? 0 : 1,
+                  }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+                  style={{ zIndex: n - depth }}
+                  className={`absolute inset-0 flex flex-col overflow-hidden rounded-[3px] border border-[var(--color-line)] bg-[var(--color-canvas)] text-[var(--color-ink)] shadow-[0_24px_40px_-24px_rgba(20,20,20,0.55)] ${
+                    onTop ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                  }`}
+                >
+                  {/* The paper: the surface tint over an opaque sheet, so the letters behind never show through */}
+                  <div className="flex flex-1 flex-col bg-[var(--color-surface)] px-6 py-6 sm:px-9 sm:py-8">
+                    <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--color-ink-faint)]">
+                      <span>{lang === 'pl' ? 'List referencyjny' : 'Letter of reference'}</span>
+                      <span>SW/REF/{String(i + 1).padStart(2, '0')}</span>
+                    </div>
+                    <div className="mt-4 border-b border-[var(--color-line-strong)] pb-4">
+                      <p className="font-display text-2xl leading-none sm:text-3xl">{r.sector[lang]}</p>
+                    </div>
+
+                    <p className="mt-5 font-display text-[17px] leading-snug sm:text-lg">„{r.quote[lang]}”</p>
+
+                    {/* The record: before and after, as a form would have it */}
+                    <dl className="mt-5 grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-[12.5px] leading-snug max-sm:hidden">
+                      <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">{lang === 'pl' ? 'Przed' : 'Before'}</dt>
+                      <dd className="text-[var(--color-ink-soft)]">{r.before[lang]}</dd>
+                      <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-accent-ink)]">{lang === 'pl' ? 'Po' : 'After'}</dt>
+                      <dd className="text-[var(--color-ink)]">{r.after[lang]}</dd>
+                    </dl>
+
+                    <div className="mt-auto flex items-end justify-between gap-4 pt-5">
+                      <div>
+                        <Signature seed={i} />
+                        <p className="mt-1 border-t border-[var(--color-line-strong)] pt-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink-soft)]">
+                          {r.name ? `${r.name}, ${r.role[lang]}` : r.role[lang]}
+                        </p>
+                      </div>
+                      {/* Not yet signed off: a rubber stamp, dev only */}
+                      {!r.approved && (
+                        <span className="mb-2 rotate-[-10deg] rounded border-2 border-[var(--color-warn)] px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-warn)] opacity-80">
+                          {lang === 'pl' ? 'Szkic' : 'Draft'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </motion.article>
+              )
+            })}
+          </div>
+          <p className="sr-only">
+            {L.sector[lang]}: {L.quote[lang]}
+          </p>
+        </div>
       </div>
     </section>
   )
 }
 
+/* ------------------------------------------------------------------ FAQ */
+
+// Every answer comes from a person: the one on the team who handles that
+// topic, with their photo from the Team section. The questions sit on the
+// left; the answer card on the right changes person and text together, and
+// its button asks that person directly (the contact form opens addressed to
+// them). On phones the card sits under the list.
+const faqAuthors: Record<FaqAuthor, number> = { mikolaj: 0, jakub: 1, wojciech: 2 }
+
+function FaqSection({ lang, onAsk }: { lang: Lang; onAsk: (message: string) => void }) {
+  const [active, setActive] = useState(0)
+  const card = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onFaq = (e: Event) => {
+      const i = (e as CustomEvent<number>).detail
+      if (typeof i === 'number' && faq[i]) setActive(i)
+    }
+    window.addEventListener('sw-faq', onFaq)
+    return () => window.removeEventListener('sw-faq', onFaq)
+  }, [])
+
+  const pick = (i: number) => {
+    setActive(i)
+    // On a phone the answer is below the list: bring it into view.
+    if (window.matchMedia('(max-width: 1023px)').matches) card.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  const f = faq[active]
+  const who = teamMembers[faqAuthors[f.by]]
+  const first = who.name[lang].split(' ')[0]
+
+  return (
+    <section id="faq" className="pt-24 pb-10 sm:pt-32">
+      <SectionHeader index={sectionNumbers.faq} label={t.sectionFaq[lang]} title={t.faqTitle[lang]} aside={t.faqBody[lang]} />
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-14">
+        <ol className="border-t border-[var(--color-line)]">
+          {faq.map((q, i) => {
+            const on = i === active
+            const person = teamMembers[faqAuthors[q.by]]
+            return (
+              <li key={q.q.en}>
+                <button
+                  onClick={() => pick(i)}
+                  aria-pressed={on}
+                  className="group flex w-full items-center gap-4 border-b border-[var(--color-line)] py-3.5 text-left"
+                >
+                  <span className={`font-mono text-[10px] ${on ? 'text-[var(--color-accent-ink)]' : 'text-[var(--color-ink-faint)]'}`}>
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span
+                    className={`flex-1 text-[15px] transition-colors ${
+                      on ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-soft)] group-hover:text-[var(--color-ink)]'
+                    }`}
+                  >
+                    {q.q[lang]}
+                  </span>
+                  {/* Who answers it, as a small face */}
+                  <img
+                    src={person.image}
+                    alt=""
+                    className={`h-6 w-6 shrink-0 rounded-full object-cover transition-[filter,opacity] ${on ? 'opacity-100' : 'opacity-50 grayscale group-hover:opacity-80'}`}
+                  />
+                </button>
+              </li>
+            )
+          })}
+        </ol>
+
+        <div ref={card} className="lg:sticky lg:top-24 lg:self-start">
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] p-6 sm:p-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active + lang}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+              >
+                <div className="flex items-center gap-3.5">
+                  <img src={who.image} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-[var(--color-accent)]/40" />
+                  <div>
+                    <p className="text-sm font-medium text-[var(--color-ink)]">{who.name[lang]}</p>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">{who.role[lang]}</p>
+                  </div>
+                </div>
+                <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-accent-ink)]">{f.q[lang]}</p>
+                <p className="mt-2 font-display text-xl leading-snug text-[var(--color-ink)] sm:text-2xl">{f.a[lang]}</p>
+                <button
+                  onClick={() =>
+                    onAsk(lang === 'pl' ? `Pytanie do: ${who.name[lang]}\n\n` : `A question for ${who.name[lang]}\n\n`)
+                  }
+                  className="group mt-7 inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--color-line-strong)] px-4 text-sm text-[var(--color-ink)] transition-colors hover:border-[var(--color-accent)]"
+                >
+                  {lang === 'pl' ? `Zapytaj ${first === 'Jakub' ? 'Jakuba' : first === 'Mikołaj' ? 'Mikołaja' : 'Wojciecha'} o coś innego` : `Ask ${first} something else`}
+                  <span className="transition-transform group-hover:translate-x-0.5" aria-hidden="true">
+                    →
+                  </span>
+                </button>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ------------------------------------------------------------------ App */
+
 export default function App() {
   const [lang, setLang] = useState<Lang>('pl')
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  // index.html has already set the class before the first paint; start from it.
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() =>
+    document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  )
+  // A choice made on the page is remembered; until then the system decides.
+  const setTheme = (next: 'light' | 'dark' | ((th: 'light' | 'dark') => 'light' | 'dark')) =>
+    setThemeState((th) => {
+      const value = typeof next === 'function' ? next(th) : next
+      try {
+        localStorage.setItem('sw-theme', value)
+      } catch {
+        // Not remembered; fine.
+      }
+      return value
+    })
   const [filter, setFilter] = useState<'all' | Project['category']>('all')
   const [open, setOpen] = useState<Project | null>(null)
   const [formOpen, setFormOpen] = useState(false)
+  // Text the contact form opens with — the brief ticket writes its summary here.
+  const [formMessage, setFormMessage] = useState('')
+  const openForm = (message = '') => {
+    setFormMessage(message)
+    setFormOpen(true)
+  }
+  const paletteActions = useMemo(
+    () => ({
+      openForm: () => openForm(),
+      openProject: (p: Project) => setOpen(p),
+      toggleTheme: () => setTheme((th) => (th === 'light' ? 'dark' : 'light')),
+      toggleLang: () => setLang((l) => (l === 'pl' ? 'en' : 'pl')),
+      email: CONTACT_EMAIL,
+    }),
+    []
+  )
+
+  // The looks to choose between: Aurora (default, no attribute), Papier and
+  // Swiss. index.html applies a saved choice before the first paint.
+  const [skin, setSkinState] = useState<Skin>(() => {
+    const saved = document.documentElement.dataset.skin as Skin | undefined
+    return saved && skins.includes(saved) ? saved : 'aurora'
+  })
+  const setSkin = (next: Skin) => {
+    setSkinState(next)
+    if (next === 'aurora') delete document.documentElement.dataset.skin
+    else document.documentElement.dataset.skin = next
+    try {
+      localStorage.setItem('sw-skin', next)
+    } catch {
+      // Not remembered; fine.
+    }
+  }
 
   useEffect(() => {
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    setTheme(isDark ? 'dark' : 'light')
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const follow = () => {
+      let saved: string | null = null
+      try {
+        saved = localStorage.getItem('sw-theme')
+      } catch {
+        // No storage: always follow the system.
+      }
+      if (!saved) setThemeState(media.matches ? 'dark' : 'light')
+    }
+    media.addEventListener('change', follow)
+    return () => media.removeEventListener('change', follow)
   }, [])
 
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+    document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
+
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
 
   const shown = projects.filter((p) => filter === 'all' || p.category === filter)
 
+  // A shorter filter shrinks the grid under the reader, who would otherwise be
+  // left further down the page (in About us). Bring them back to the grid top.
+  const gridRef = useRef<HTMLDivElement>(null)
+  const pickFilter = (key: typeof filter) => {
+    setFilter(key)
+    const grid = gridRef.current
+    if (grid && grid.getBoundingClientRect().top < 140) {
+      window.scrollTo({ top: grid.getBoundingClientRect().top + window.scrollY - 140, behavior: 'smooth' })
+    }
+  }
+
+  // reducedMotion="user": every framer animation below honours the OS setting.
   return (
-    <div className="min-h-screen overflow-x-clip">
-      <Header lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} />
+    <MotionConfig reducedMotion="user">
+      <div className="relative min-h-screen overflow-x-clip">
+        <CursorGlow />
+        <CommandPalette lang={lang} actions={paletteActions} />
+        <Header lang={lang} setLang={setLang} theme={theme} setTheme={setTheme} skin={skin} setSkin={setSkin} />
+        <ConceptDock skin={skin} setSkin={setSkin} lang={lang} />
 
-      <main className="mx-auto w-full max-w-6xl px-5 pt-16 sm:px-8">
-        <Reveal>
-          <Hero lang={lang} />
-        </Reveal>
-
-        {/* Filters */}
-        <Reveal delay={100}>
-          <div
-            className="sticky top-[72px] z-30 -mx-5 flex items-center gap-2 overflow-x-auto border-b border-[var(--color-line)] bg-[var(--color-canvas)]/90 px-5 py-3 backdrop-blur sm:top-[76px] sm:mx-0 sm:rounded-full sm:border sm:px-2 sm:py-2 relative"
-          >
-            {categories.map((c) => {
-              const isActive = filter === c.key
-              return (
-                <button
-                  key={c.key}
-                  onClick={() => setFilter(c.key)}
-                  className={`relative whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'text-[var(--color-canvas)]'
-                      : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-surface)] hover:text-[var(--color-ink)]'
-                  }`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="filter-active"
-                      className="absolute inset-0 rounded-full bg-[var(--color-ink)]"
-                      style={{ zIndex: -1 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative z-10">{c.label[lang]}</span>
-                </button>
-              )
-            })}
+        <main className="relative z-[2]">
+          <div className="mx-auto w-full max-w-6xl px-4 pt-16 sm:px-8">
+            <Hero lang={lang} onOpenForm={() => openForm()} onOpen={setOpen} />
           </div>
-        </Reveal>
 
-        {/* Work grid */}
-        <section id="work" className="pt-6">
-          <Reveal delay={200}>
-            <div className="mb-4 flex items-baseline justify-between">
-              <h2 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
-                {t.workTitle[lang]}
-              </h2>
-              <span className="font-mono text-xs text-[var(--color-ink-faint)]">
-                {shown.length} {t.workCount[lang]}
-              </span>
-            </div>
-          </Reveal>
-
-          {/* Said once, above the grid — the cards already carry their own badges. */}
-          <Reveal delay={250}>
-            <p className="mb-6 flex max-w-2xl items-start gap-2.5 text-sm leading-relaxed text-[var(--color-ink-soft)]">
-              <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-ink-faint)]" />
-              <span>
-                {t.workNote[lang]}{' '}
-                <a
-                  href="#contact"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
-                  }}
-                  className="font-medium text-[var(--color-ink)] underline decoration-[var(--color-line-strong)] underline-offset-4 transition-colors hover:decoration-[var(--color-accent)]"
-                >
-                  {t.workNoteCta[lang]}
-                </a>
-              </span>
-            </p>
-          </Reveal>
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {shown.map((p, i) => (
-              <Reveal key={p.id} delay={i * 75}>
-                <Card p={p} lang={lang} onOpen={() => setOpen(p)} />
+          <div className="mx-auto w-full max-w-6xl px-4 sm:px-8">
+            {/* Work grid */}
+            <section id="work" className="pt-20 sm:pt-24">
+              <Reveal>
+                <SectionHeader
+                  index={sectionNumbers.work}
+                  label={t.sectionWork[lang]}
+                  title={t.workTitle[lang]}
+                  aside={
+                    <span className="flex items-start gap-2.5">
+                      <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-ink-faint)]" />
+                      <span>
+                        {t.workNote[lang]}{' '}
+                        <a
+                          href="#contact"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            scrollToSection('contact')
+                          }}
+                          className="accent-line font-medium text-[var(--color-ink)]"
+                        >
+                          {t.workNoteCta[lang]}
+                        </a>
+                      </span>
+                    </span>
+                  }
+                />
               </Reveal>
-            ))}
+
+              {/* Filters: the active one carries the brand line instead of a fill. */}
+              {/* Filters float as their own pill, clear of the masthead above them */}
+              <div className="pointer-events-none sticky top-[74px] z-30 mb-10 flex justify-center">
+              <div className="pointer-events-auto flex max-w-full items-center overflow-x-auto rounded-full border border-[var(--color-line-strong)] bg-[var(--color-canvas)]/85 px-1.5 shadow-[0_14px_30px_-20px_rgba(20,20,20,0.4)] backdrop-blur-md [scrollbar-width:none]">
+                {categories.map((c) => {
+                  const isActive = filter === c.key
+                  return (
+                    <button
+                      key={c.key}
+                      onClick={() => pickFilter(c.key)}
+                      aria-pressed={isActive}
+                      className={`relative min-h-11 whitespace-nowrap px-3 py-2.5 text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'text-[var(--color-ink)]'
+                          : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+                      }`}
+                    >
+                      {c.label[lang]}
+                      {isActive && (
+                        <motion.span
+                          layoutId="filter-active"
+                          className="absolute inset-x-3 bottom-2 h-[1.5px] bg-[var(--color-accent)]"
+                          transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                        />
+                      )}
+                    </button>
+                  )
+                })}
+                <span className="ml-1 hidden shrink-0 border-l border-[var(--color-line)] py-1 pl-3 pr-3 font-mono text-[11px] text-[var(--color-ink-faint)] sm:block">
+                  {String(shown.length).padStart(2, '0')} {t.workCount[lang]}
+                </span>
+              </div>
+              </div>
+
+              {/* Two to a row from tablets up: big enough to actually read a screenshot. */}
+              <div ref={gridRef} className="grid grid-cols-1 gap-x-10 gap-y-16 md:grid-cols-2 lg:gap-y-24">
+                {shown.map((p, i) => (
+                  <Reveal key={p.id} delay={(i % 2) * 100}>
+                    <Card p={p} index={projects.indexOf(p) + 1} lang={lang} onOpen={() => setOpen(p)} />
+                  </Reveal>
+                ))}
+              </div>
+            </section>
+
+            <Reveal>
+              <AboutUsSection lang={lang} />
+            </Reveal>
+
+            <ProcessStory lang={lang} />
+
+            <Reveal>
+              <BuilderSection lang={lang} onOpen={setOpen} />
+            </Reveal>
+
+            {shownTestimonials.length > 0 && (
+              <Reveal>
+                <TestimonialsSection lang={lang} />
+              </Reveal>
+            )}
+
+            <Reveal>
+              <FaqSection lang={lang} onAsk={(m) => openForm(m)} />
+            </Reveal>
+
+            <Contact lang={lang} onOpenForm={openForm} />
           </div>
-        </section>
+        </main>
 
-        <Reveal>
-          <AboutUsSection lang={lang} />
-        </Reveal>
+        <Footer lang={lang} />
 
-        <Reveal>
-          <ProcessSection lang={lang} />
-        </Reveal>
-
-        <Reveal>
-          <TestimonialsSection lang={lang} />
-        </Reveal>
-
-        <Reveal>
-          <Contact lang={lang} onOpenForm={() => setFormOpen(true)} />
-        </Reveal>
-      </main>
-
-      <Footer lang={lang} />
-
-      {open && <CaseStudy p={open} lang={lang} onClose={() => setOpen(null)} />}
-      {formOpen && <ContactDialog lang={lang} onClose={() => setFormOpen(false)} />}
-    </div>
+        {open && (
+          <CaseStudy
+            p={open}
+            list={shown.includes(open) ? shown : projects}
+            lang={lang}
+            onNavigate={setOpen}
+            onClose={() => setOpen(null)}
+          />
+        )}
+        {formOpen && <ContactDialog lang={lang} initialMessage={formMessage} onClose={() => setFormOpen(false)} />}
+      </div>
+    </MotionConfig>
   )
 }
 
 /* ---------------------------------------------------------------- Header */
 
-const navIcons: Record<string, ReactNode> = {
-  work: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-      <rect x="3" y="7" width="18" height="13" rx="2" />
-      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  ),
-  about: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-      <circle cx="9" cy="8" r="3" />
-      <path d="M15 11a3 3 0 1 0 0-6" />
-      <path d="M3 20c0-3 2.5-5 6-5s6 2 6 5" />
-      <path d="M17 15c2.5.4 4 2.3 4 5" />
-    </svg>
-  ),
-  testimonials: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-      <path d="M12 3l2.5 5.3 5.5.8-4 4 1 5.6L12 21l-5-2.3 1-5.6-4-4 5.5-.8z" />
-    </svg>
-  ),
-  contact: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px]">
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="m3 7 9 6 9-6" />
-    </svg>
-  ),
+const skins = ['aurora', 'papier', 'swiss'] as const
+type Skin = (typeof skins)[number]
+const skinNames: Record<Skin, string> = {
+  aurora: 'Aurora',
+  papier: 'Papier',
+  swiss: 'Swiss',
+}
+const skinSwatch: Record<Skin, [string, string]> = {
+  aurora: ['#07060d', '#7cf7d4'],
+  papier: ['#f5f2ec', '#e4573f'],
+  swiss: ['#f1efe9', '#ff3b1f'],
+}
+const skinBlurb: Record<Skin, LS> = {
+  aurora: { pl: 'Nocne niebo, szkło, Syne', en: 'Night sky, glass, Syne' },
+  papier: { pl: 'Papier, tusz, koral, Fraunces', en: 'Paper, ink, coral, Fraunces' },
+  swiss: { pl: 'Szwajcarska typografia, czerwień', en: 'Swiss typography, red' },
+}
+
+/**
+ * While the look is being chosen: a dock at the bottom of the page with every
+ * look as a swatch, and ← → (with Alt) to step through them. Remove it, and
+ * the looks that lost, once one is picked.
+ */
+function ConceptDock({ skin, setSkin, lang }: { skin: Skin; setSkin: (s: Skin) => void; lang: Lang }) {
+  const [open, setOpen] = useState(true)
+  const step = (d: number) => setSkin(skins[(skins.indexOf(skin) + d + skins.length) % skins.length])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.altKey || isTypingTarget(e)) return
+      if (e.key === 'ArrowRight') step(1)
+      else if (e.key === 'ArrowLeft') step(-1)
+      else return
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  return (
+    <div className="fixed bottom-4 left-1/2 z-[60] -translate-x-1/2">
+      <div className="flex items-center gap-1 rounded-full border border-[var(--color-line-strong)] bg-[var(--color-canvas)]/90 p-1.5 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.5)] backdrop-blur-md">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="flex h-9 items-center gap-2 rounded-full px-3 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+          aria-expanded={open}
+        >
+          {lang === 'pl' ? 'Koncept' : 'Concept'}
+          <span className="text-[var(--color-ink)]">
+            {skins.indexOf(skin) + 1}/{skins.length}
+          </span>
+        </button>
+        {open && (
+          <>
+            <button
+              onClick={() => step(-1)}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-ink-soft)] hover:bg-[var(--color-ink)]/[0.07] hover:text-[var(--color-ink)]"
+              aria-label={lang === 'pl' ? 'Poprzedni wygląd' : 'Previous look'}
+            >
+              ←
+            </button>
+            {skins.map((s) => (
+              <button
+                key={s}
+                onClick={() => setSkin(s)}
+                title={`${skinNames[s]} — ${skinBlurb[s][lang]}`}
+                aria-pressed={skin === s}
+                className={`group/sw relative flex h-9 items-center gap-2 rounded-full pl-1.5 transition-colors ${
+                  skin === s ? 'bg-[var(--color-ink)]/[0.08] pr-3' : 'pr-1.5 hover:bg-[var(--color-ink)]/[0.05]'
+                }`}
+              >
+                <span
+                  className={`h-6 w-6 rounded-full border ${skin === s ? 'border-[var(--color-accent)]' : 'border-black/15'}`}
+                  style={{ background: `linear-gradient(135deg, ${skinSwatch[s][0]} 50%, ${skinSwatch[s][1]} 50%)` }}
+                  aria-hidden="true"
+                />
+                {skin === s && <span className="text-[13px] text-[var(--color-ink)]">{skinNames[s]}</span>}
+              </button>
+            ))}
+            <button
+              onClick={() => step(1)}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-ink-soft)] hover:bg-[var(--color-ink)]/[0.07] hover:text-[var(--color-ink)]"
+              aria-label={lang === 'pl' ? 'Następny wygląd' : 'Next look'}
+            >
+              →
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Steps to the next look; shows the current one. */
+function SkinSwitch({ skin, setSkin, lang }: { skin: Skin; setSkin: (s: Skin) => void; lang: Lang }) {
+  const other: Skin = skins[(skins.indexOf(skin) + 1) % skins.length]
+  return (
+    <button
+      onClick={() => setSkin(other)}
+      title={lang === 'pl' ? `Zmień wygląd na: ${skinNames[other]}` : `Switch look to: ${skinNames[other]}`}
+      aria-label={lang === 'pl' ? `Wygląd strony: ${skinNames[skin]}. Zmień na ${skinNames[other]}` : `Site look: ${skinNames[skin]}. Switch to ${skinNames[other]}`}
+      className="group/skin flex h-9 items-center gap-2 rounded-full border border-[var(--color-line-strong)] pl-1 pr-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-ink)]"
+    >
+      <span
+        className="h-6 w-6 rounded-full border border-black/10 transition-transform duration-500 group-hover/skin:rotate-180"
+        style={{ background: `linear-gradient(135deg, ${skinSwatch[skin][0]} 50%, ${skinSwatch[skin][1]} 50%)` }}
+        aria-hidden="true"
+      />
+      {skinNames[skin]}
+    </button>
+  )
+}
+
+/** Width from which the section links sit in the bar instead of the menu. */
+const NAV_INLINE = 1280
+
+const navKeys = sectionKeys
+
+/** Which nav section currently holds the middle of the viewport. */
+function useActiveSection(ids: readonly string[]) {
+  const [active, setActive] = useState<string | null>(null)
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) if (entry.isIntersecting) setActive(entry.target.id)
+      },
+      { rootMargin: '-45% 0px -50% 0px' }
+    )
+    ids.forEach((id) => {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [ids])
+  return active
 }
 
 function Header({
@@ -377,185 +852,241 @@ function Header({
   setLang,
   theme,
   setTheme,
+  skin,
+  setSkin,
 }: {
   lang: Lang
   setLang: (l: Lang) => void
   theme: 'light' | 'dark'
   setTheme: (t: 'light' | 'dark') => void
+  skin: Skin
+  setSkin: (s: Skin) => void
 }) {
-  // Bendable navbar border: the horizontal pill's bottom edge dips into a notch
-  // below the hovered link. We draw the outline as an SVG path and clip the
-  // glass to it.
-  const barRef = useRef<HTMLDivElement>(null)
-  const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({})
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null)
-  const [navOpen, setNavOpen] = useState(false)
+  // A masthead, like the top of a printed page: the brand, the sections, and
+  // a hairline underneath that fills with the accent as you read down the page.
+  const activeKey = useActiveSection(navKeys)
+  const [menuOpen, setMenuOpen] = useState(false)
+  // The link under the pointer; a glass pill glides between hovered links.
+  const [hoverKey, setHoverKey] = useState<string | null>(null)
+  const { scrollYProgress } = useScroll()
+  const progress = useSpring(scrollYProgress, { stiffness: 200, damping: 40, mass: 0.3 })
 
-  // The pill unfolds on its own once the page is scrolled past the hero fold,
-  // and folds back to icons at the top. Hovering still unfolds it anywhere.
-  const [scrolled, setScrolled] = useState(false)
-  const expanded = navOpen || scrolled
+  const menuRef = useRef<HTMLDivElement>(null)
+  useDialog(menuRef, () => setMenuOpen(false), { open: menuOpen })
 
+  // The full-page menu exists below the desktop layout only; if the screen
+  // grows past it (a tablet turned sideways) while it is open, close it, or the
+  // page would stay locked behind a menu that is no longer drawn.
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 80)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    if (!menuOpen) return
+    const wide = window.matchMedia(`(min-width: ${NAV_INLINE}px)`)
+    const onChange = () => wide.matches && setMenuOpen(false)
+    onChange()
+    wide.addEventListener('change', onChange)
+    return () => wide.removeEventListener('change', onChange)
+  }, [menuOpen])
 
   const goToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault()
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  }
-  const [bar, setBar] = useState({ w: 0, h: 0 })
-  const [outline, setOutline] = useState('')
-  const notchX = useSpring(0, { stiffness: 420, damping: 34 })
-  const notchDepth = useSpring(0, { stiffness: 420, damping: 30 })
-
-  useEffect(() => {
-    const el = barRef.current
-    if (!el) return
-    const measure = () => setBar({ w: el.offsetWidth, h: el.offsetHeight })
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    measure()
-    return () => ro.disconnect()
-  }, [])
-
-  const buildOutline = () => {
-    const { w: W, h: H } = bar
-    if (W <= 0 || H <= 0) return ''
-    const r = H / 2
-    const hw = 20 // half-width of the notch mouth
-    const dep = notchDepth.get() // bump depth downwards
-    const x = Math.max(r + hw, Math.min(W - r - hw, notchX.get()))
-    return (
-      `M ${r} 0 H ${W - r} A ${r} ${r} 0 0 1 ${W - r} ${H} ` +
-      `H ${x + hw} C ${x + hw * 0.55} ${H} ${x + hw * 0.5} ${H + dep} ${x} ${H + dep} ` +
-      `C ${x - hw * 0.5} ${H + dep} ${x - hw * 0.55} ${H} ${x - hw} ${H} ` +
-      `H ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`
-    )
+    setMenuOpen(false)
+    scrollToSection(id)
   }
 
-  useEffect(() => setOutline(buildOutline()), [bar])
-  useMotionValueEvent(notchX, 'change', () => setOutline(buildOutline()))
-  useMotionValueEvent(notchDepth, 'change', () => setOutline(buildOutline()))
-
-  useEffect(() => {
-    const el = barRef.current
-    const link = hoveredKey ? linkRefs.current[hoveredKey] : null
-    if (!el || !link) {
-      notchDepth.set(0)
-      return
-    }
-    const br = el.getBoundingClientRect()
-    const lr = link.getBoundingClientRect()
-    const cx = lr.left - br.left + lr.width / 2
-    if (notchDepth.get() < 0.5) notchX.jump(cx)
-    else notchX.set(cx)
-    notchDepth.set(12)
-  }, [hoveredKey, bar])
+  const langSwitch = (
+    <div className="flex items-center font-mono text-[11px] font-medium uppercase tracking-[0.14em]">
+      {(['pl', 'en'] as const).map((l, i) => (
+        <span key={l} className="flex items-center">
+          {i > 0 && <span className="px-1.5 text-[var(--color-line-strong)]">/</span>}
+          <button
+            onClick={() => setLang(l)}
+            aria-pressed={lang === l}
+            className={`min-h-10 uppercase transition-colors ${
+              lang === l ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)] hover:text-[var(--color-accent-ink)]'
+            }`}
+          >
+            {l}
+          </button>
+        </span>
+      ))}
+    </div>
+  )
 
   return (
     <>
-      {/* Persistent controls, fixed to the top-right corner */}
-      <div className="fixed right-4 top-3 z-50 flex items-center gap-2">
-        <button
-          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-canvas)]/80 text-[var(--color-ink-soft)] backdrop-blur-xl transition-colors hover:text-[var(--color-ink)]"
-          aria-label="Toggle theme"
-        >
-          {theme === 'light' ? '🌙' : '☀️'}
-        </button>
-        <div className="flex items-center rounded-full border border-[var(--color-line)] bg-[var(--color-canvas)]/80 p-0.5 font-mono text-[11px] font-semibold backdrop-blur-xl relative">
-          {(['pl', 'en'] as const).map((l) => {
-            const isActive = lang === l
-            return (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                className={`relative rounded-full px-2.5 py-1.5 uppercase transition-colors ${
-                  isActive
-                    ? 'text-white'
-                    : 'text-[var(--color-ink-faint)] hover:text-[var(--color-ink-soft)]'
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="lang-active"
-                    className="absolute inset-0 -z-0 rounded-full bg-[var(--color-accent)]"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10">{l}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Brand, fixed to the top-left corner */}
-      <div className="fixed left-4 top-3 z-50 flex items-center gap-2.5 rounded-full border border-[var(--color-line)] bg-[var(--color-canvas)]/80 py-1.5 pl-1.5 pr-4 backdrop-blur-xl">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] font-display text-[11px] font-bold text-white">
-          SW
-        </div>
-        <div className="flex flex-col leading-tight">
-          <span className="font-display text-sm font-semibold">{t.brand[lang]}</span>
-          <span className="hidden text-[11px] text-[var(--color-ink-faint)] sm:block">{t.role[lang]}</span>
-        </div>
-      </div>
-
-      {/* Horizontal nav pill: a thumb-reachable dock at the bottom on phones and
-          tablets, moving up into the top band next to brand and controls on
-          desktop, where there is room for it beside them. */}
-      <div
-        ref={barRef}
-        onMouseEnter={() => setNavOpen(true)}
-        onMouseLeave={() => {
-          setNavOpen(false)
-          setHoveredKey(null)
-        }}
-        style={outline ? { clipPath: `path('${outline}')` } : undefined}
-        className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 flex-row items-center gap-1 bg-[var(--color-canvas)]/55 px-2 py-1.5 backdrop-blur-2xl backdrop-saturate-150 [filter:drop-shadow(0_12px_28px_rgba(20,22,26,0.18))] lg:bottom-auto lg:top-3"
-      >
-        {/* The pill's own bendable outline */}
-        <svg
-          className="pointer-events-none absolute left-0 top-0 overflow-visible"
-          width={bar.w}
-          height={bar.h}
-          aria-hidden="true"
-        >
-          <path d={outline} fill="none" stroke="var(--color-line-strong)" strokeWidth={1.25} />
-        </svg>
-
-        {(['work', 'about', 'testimonials', 'contact'] as const).map((k) => (
-          <a
-            key={k}
-            ref={(el) => {
-              linkRefs.current[k] = el
-            }}
-            href={`#${k}`}
-            onClick={(e) => goToSection(e, k)}
-            onMouseEnter={() => setHoveredKey(k)}
-            title={t.nav[k][lang]}
-            aria-label={t.nav[k][lang]}
-            className="relative flex items-center rounded-lg px-2.5 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
-          >
-            <span className="relative z-10 flex h-[18px] w-[18px] shrink-0 items-center justify-center">
-              {navIcons[k]}
-            </span>
-            {/* Labels unfold from lg up only: expanded, the pill is wider than a
-                phone screen, so the dock stays icons-only below that. */}
-            <span
-              className={`relative z-10 ml-0 max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-300 ${
-                expanded ? 'lg:ml-3 lg:max-w-[10rem] lg:opacity-100' : ''
-              }`}
-            >
-              {t.nav[k][lang]}
+      <header className="fixed inset-x-0 top-0 z-50 bg-[var(--color-canvas)]/90 backdrop-blur-md">
+        <div className="mx-auto flex h-[60px] w-full max-w-6xl items-center gap-6 px-4 sm:px-8 xl:gap-5">
+          {/* Brand: on hover the logo's line stretches and the name lifts */}
+          <a href="#hero" onClick={(e) => goToSection(e, 'hero')} className="group/brand flex shrink-0 items-center gap-3">
+            <SWMark
+              className="text-[19px] text-[var(--color-ink)]"
+              line="h-[1.5px] transition-[width] duration-300 ease-out group-hover/brand:w-[1.9em]"
+            />
+            <span className="hidden font-display text-[15px] text-[var(--color-ink)] transition-transform duration-300 group-hover/brand:-translate-y-px group-hover/brand:text-[var(--color-accent-ink)] sm:block">
+              {t.brand[lang]}
             </span>
           </a>
-        ))}
-      </div>
+
+          <nav
+            className="ml-auto hidden items-center gap-1 xl:flex"
+            aria-label={lang === 'pl' ? 'Sekcje' : 'Sections'}
+            onMouseLeave={() => setHoverKey(null)}
+          >
+            {navKeys.map((k) => (
+              <a
+                key={k}
+                href={`#${k}`}
+                onClick={(e) => goToSection(e, k)}
+                aria-current={activeKey === k ? 'location' : undefined}
+                onMouseEnter={() => setHoverKey(k)}
+                className={`group relative flex h-[60px] items-center px-3 text-sm transition-colors ${
+                  activeKey === k ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+                }`}
+              >
+                {hoverKey === k && (
+                  <motion.span
+                    layoutId="nav-hover"
+                    className="absolute inset-x-0 inset-y-3 rounded-full border border-[var(--color-line)] bg-[var(--color-ink)]/[0.06]"
+                    transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="relative">{t.nav[k][lang]}</span>
+                {/* A thin accent line grows under the hovered link */}
+                {activeKey !== k && (
+                  <span
+                    className="absolute inset-x-3 bottom-[15px] h-px origin-left scale-x-0 bg-[var(--color-accent)] opacity-70 transition-transform duration-300 ease-out group-hover:scale-x-100"
+                    aria-hidden="true"
+                  />
+                )}
+                {/* The section on screen gets a short accent line under its label, clear of the progress hairline at the bar edge */}
+                {activeKey === k && (
+                  <motion.span
+                    layoutId="nav-active"
+                    className="absolute inset-x-3 bottom-[15px] h-[2px] rounded-full bg-[var(--color-accent)]"
+                    transition={{ type: 'spring', stiffness: 400, damping: 34 }}
+                  />
+                )}
+              </a>
+            ))}
+          </nav>
+
+          <div className="ml-auto flex items-center gap-4 xl:ml-1 xl:gap-3 xl:border-l xl:border-[var(--color-line)] xl:pl-5">
+            {langSwitch}
+            <span className="hidden sm:flex">
+              <SkinSwitch skin={skin} setSkin={setSkin} lang={lang} />
+            </span>
+            <button
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              className="group/theme flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-ink)]/[0.06] hover:text-[var(--color-accent-ink)]"
+              aria-label={lang === 'pl' ? 'Przełącz motyw' : 'Toggle theme'}
+            >
+              {theme === 'light' ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="h-[17px] w-[17px] transition-transform duration-500 group-hover/theme:-rotate-[20deg]">
+                  <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="h-[17px] w-[17px] transition-transform duration-700 group-hover/theme:rotate-90">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+                </svg>
+              )}
+            </button>
+            {/* Search over the whole site (the command palette); keyboards get Ctrl/⌘ K for the same. */}
+            <button
+              onClick={() => window.dispatchEvent(new Event('sw-palette'))}
+              className="group/k hidden h-9 items-center gap-2 rounded-full border border-[var(--color-line-strong)] px-3 text-[13px] text-[var(--color-ink-soft)] transition-[color,border-color,box-shadow] hover:border-[var(--color-accent)] hover:text-[var(--color-ink)] hover:shadow-[0_0_18px_-6px_var(--color-accent)] xl:flex"
+              aria-label={lang === 'pl' ? 'Szukaj na stronie' : 'Search the site'}
+              title={`${lang === 'pl' ? 'Szukaj na stronie' : 'Search the site'} (${paletteShortcut})`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="h-4 w-4 transition-colors group-hover/k:text-[var(--color-accent-ink)]" aria-hidden="true">
+                <path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" />
+              </svg>
+              {lang === 'pl' ? 'Szukaj' : 'Search'}
+            </button>
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="flex min-h-10 items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-ink)] xl:hidden"
+              aria-expanded={menuOpen}
+              aria-controls="nav-menu"
+            >
+              Menu
+              <span className="flex flex-col gap-[4px]" aria-hidden="true">
+                <span className="h-px w-4 bg-current" />
+                <span className="h-px w-4 bg-current" />
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* The hairline, filling with the accent as the page is read */}
+        <div className="relative h-px bg-[var(--color-line)]">
+          <motion.div
+            className="absolute inset-0 origin-left bg-[var(--color-accent)]"
+            style={{ scaleX: progress }}
+            aria-hidden="true"
+          />
+        </div>
+      </header>
+
+      {/* Phones and tablets: a full page of contents, like a magazine's index */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            id="nav-menu"
+            ref={menuRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[70] flex flex-col bg-[var(--color-canvas)] xl:hidden"
+          >
+            <div className="flex h-[60px] shrink-0 items-center justify-between border-b border-[var(--color-line)] px-4 sm:px-8">
+              <SWMark className="text-[19px] text-[var(--color-ink)]" />
+              <button
+                onClick={() => setMenuOpen(false)}
+                className="flex min-h-10 items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-ink)]"
+              >
+                {t.close[lang]} <span aria-hidden="true">✕</span>
+              </button>
+            </div>
+            <nav className="flex flex-1 flex-col justify-center px-4 sm:px-8" aria-label={lang === 'pl' ? 'Sekcje' : 'Sections'}>
+              {navKeys.map((k, i) => (
+                <motion.a
+                  key={k}
+                  href={`#${k}`}
+                  onClick={(e) => goToSection(e, k)}
+                  aria-current={activeKey === k ? 'location' : undefined}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0, transition: { delay: 0.05 + i * 0.04, ease: [0.22, 1, 0.36, 1] } }}
+                  className="group flex items-baseline border-b border-[var(--color-line)] py-4"
+                >
+                  <span className="font-display text-4xl font-light text-[var(--color-ink)]">
+                    <span className={activeKey === k ? 'accent-line accent-line-lead' : ''}>{t.nav[k][lang]}</span>
+                  </span>
+                  <span
+                    className="ml-auto text-[var(--color-ink-faint)] transition-[transform,color] duration-300 group-hover:translate-x-1 group-hover:text-[var(--color-accent-ink)] group-active:translate-x-1 group-active:text-[var(--color-accent-ink)]"
+                    aria-hidden="true"
+                  >
+                    →
+                  </span>
+                </motion.a>
+              ))}
+            </nav>
+            <div className="flex items-center gap-3 px-4 pb-4 sm:px-8">
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
+                {lang === 'pl' ? 'Wygląd' : 'Look'}
+              </span>
+              <SkinSwitch skin={skin} setSkin={setSkin} lang={lang} />
+            </div>
+            <p className="px-4 pb-8 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink-faint)] sm:px-8">
+              {t.brand[lang]} · {CONTACT_EMAIL}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }
@@ -626,13 +1157,8 @@ const faceIcons: Record<FaceIcon, ReactNode> = {
 
 type FaceTheme = 'studio' | TeamMember['theme']
 
-/** One hue per discipline; the texture, the badge and the role line share it. */
-const faceHues: Record<FaceTheme, string> = {
-  studio: 'var(--color-accent)',
-  design: '#7c3aed',
-  security: 'var(--color-positive)',
-  analysis: 'var(--color-warn)',
-}
+/** Every face is drawn in the accent colour; the texture tells the disciplines apart. */
+const FACE_HUE = 'var(--color-accent)'
 
 // Fixed, not random: the rain has to look the same on every render so the two
 // card faces never disagree mid-flip.
@@ -655,7 +1181,7 @@ function FaceTexture({ theme, hue }: { theme: FaceTheme; hue: string }) {
   if (theme === 'security') {
     return (
       <div
-        className="absolute inset-0 overflow-hidden opacity-[0.22] [mask-image:linear-gradient(to_bottom,transparent,#000_25%,#000_70%,transparent)]"
+        className="absolute inset-0 overflow-hidden opacity-[0.2] [mask-image:linear-gradient(to_bottom,transparent,#000_25%,#000_70%,transparent)]"
         aria-hidden="true"
       >
         <div className="flex h-full justify-between px-1">
@@ -678,11 +1204,11 @@ function FaceTexture({ theme, hue }: { theme: FaceTheme; hue: string }) {
       <svg
         viewBox="0 0 160 110"
         preserveAspectRatio="xMidYMid slice"
-        className="absolute inset-0 h-full w-full opacity-[0.28]"
+        className="absolute inset-0 h-full w-full opacity-[0.3]"
         aria-hidden="true"
       >
         {[18, 46, 74, 102, 130].map((x) => (
-          <rect key={x} x={x} y="0" width="12" height="110" fill={hue} opacity="0.14" />
+          <rect key={x} x={x} y="0" width="12" height="110" fill={hue} opacity="0.12" />
         ))}
         {[24, 48, 72, 96].map((y) => (
           <line key={y} x1="0" y1={y} x2="160" y2={y} stroke={hue} strokeWidth="0.4" opacity="0.4" />
@@ -700,7 +1226,7 @@ function FaceTexture({ theme, hue }: { theme: FaceTheme; hue: string }) {
       <svg
         viewBox="0 0 160 110"
         preserveAspectRatio="xMidYMid slice"
-        className="absolute inset-0 h-full w-full opacity-[0.28]"
+        className="absolute inset-0 h-full w-full opacity-[0.3]"
         aria-hidden="true"
       >
         <line x1="8" y1="96" x2="152" y2="96" stroke={hue} strokeWidth="0.6" opacity="0.6" />
@@ -711,7 +1237,7 @@ function FaceTexture({ theme, hue }: { theme: FaceTheme; hue: string }) {
           [96, 30],
           [122, 50],
         ].map(([x, y]) => (
-          <rect key={x} x={x} y={y} width="14" height={96 - y} fill={hue} opacity="0.16" />
+          <rect key={x} x={x} y={y} width="14" height={96 - y} fill={hue} opacity="0.14" />
         ))}
         <polyline
           points="25,70 51,52 77,60 103,24 129,38"
@@ -737,7 +1263,7 @@ function FaceTexture({ theme, hue }: { theme: FaceTheme; hue: string }) {
 
   return (
     <div
-      className="absolute inset-0 opacity-[0.16]"
+      className="absolute inset-0 opacity-[0.18]"
       style={{
         backgroundImage: `radial-gradient(${hue} 0.9px, transparent 1px)`,
         backgroundSize: '11px 11px',
@@ -747,14 +1273,85 @@ function FaceTexture({ theme, hue }: { theme: FaceTheme; hue: string }) {
   )
 }
 
+/** One face of the flipping business card. */
+type FaceData = {
+  tag: string | LS
+  name: string | LS
+  role: string | LS
+  theme: FaceTheme
+  stack: StackItem[]
+}
+
+function Face({ data, back, lang }: { data: FaceData; back?: boolean; lang: Lang }) {
+  const resolve = (v: string | LS) => (typeof v === 'string' ? v : v[lang])
+  return (
+    <div
+      className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-xl border border-[var(--color-line-strong)] p-5 shadow-[0_34px_65px_-24px_rgba(20,20,20,0.4)]"
+      style={{
+        backfaceVisibility: 'hidden',
+        transform: back ? 'rotateY(180deg)' : undefined,
+        // Opaque, unlike the glass surfaces: the watermark and the sky must not
+        // show through behind the text.
+        background:
+          'linear-gradient(160deg, color-mix(in srgb, var(--color-canvas) 90%, var(--color-accent) 10%), color-mix(in srgb, var(--color-canvas) 96%, var(--color-ink) 4%))',
+      }}
+    >
+      {/* The texture covers the whole card; a scrim in the card's own colour
+          darkens it behind the text so the words stay readable. */}
+      <FaceTexture theme={data.theme} hue={FACE_HUE} />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(to top, color-mix(in srgb, var(--color-canvas) 88%, transparent) 0%, color-mix(in srgb, var(--color-canvas) 62%, transparent) 45%, transparent 85%)',
+        }}
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 flex items-start justify-between">
+        <SWMark className="text-[28px] text-[var(--color-ink)]" />
+        <span className="rounded-full border border-[var(--color-line)] bg-[var(--color-canvas)] px-2.5 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--color-ink-soft)]">
+          {resolve(data.tag)}
+        </span>
+      </div>
+
+      <div className="relative z-10">
+        {/* The studio name pings the accent like a radar contact; the people's names stay put. */}
+        <p
+          className={`font-display text-xl leading-tight text-[var(--color-ink)] xl:text-2xl ${
+            data.theme === 'studio' ? '[animation:radar-ping_2.6s_ease-out_infinite]' : ''
+          }`}
+        >
+          {resolve(data.name)}
+        </p>
+        <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink-soft)] xl:text-[11px]">
+          {resolve(data.role)}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-1">
+          {data.stack.map((item, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1 rounded-md border border-[var(--color-line)] bg-[var(--color-canvas)]/85 px-1.5 py-[3px] font-mono text-[9px] leading-none text-[var(--color-ink-soft)] xl:text-[10px]"
+            >
+              <span className="text-[var(--color-accent)]">{faceIcons[item.icon]}</span>
+              {resolve(item.label)}
+            </span>
+          ))}
+        </div>
+
+        {/* The same line on every face, so it reads as the studio's promise
+            rather than a caption belonging to one person. The motto itself is
+            the hero headline now. */}
+        <p className="mt-3 border-t border-[var(--color-line)] pt-2.5 font-display text-[11px] italic leading-snug text-[var(--color-ink)] xl:text-xs">
+          {t.heroTitle[lang]}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function FlipCard({ lang }: { lang: Lang }) {
-  const faces: {
-    tag: string | LS
-    name: string | LS
-    role: string | LS
-    theme: FaceTheme
-    stack: StackItem[]
-  }[] = [
+  const faces: FaceData[] = [
     {
       tag: { pl: 'Studio', en: 'Studio' },
       name: 'SW Development',
@@ -775,15 +1372,38 @@ function FlipCard({ lang }: { lang: Lang }) {
     })),
   ]
 
-  const resolve = (v: string | { pl: string; en: string }) =>
-    typeof v === 'string' ? v : v[lang]
-
   const [index, setIndex] = useState(0)
 
+  // The card is only drawn from lg up; below that neither the flip timer nor
+  // the page-wide pointer listener runs.
+  const [shown, setShown] = useState(() => window.matchMedia('(min-width: 1024px)').matches)
   useEffect(() => {
-    const id = setInterval(() => setIndex((i) => i + 1), 3000)
-    return () => clearInterval(id)
+    const media = window.matchMedia('(min-width: 1024px)')
+    const onChange = () => setShown(media.matches)
+    media.addEventListener('change', onChange)
+    return () => media.removeEventListener('change', onChange)
   }, [])
+
+  useEffect(() => {
+    if (!shown) return
+    const id = setInterval(() => setIndex((i) => i + 1), 3200)
+    return () => clearInterval(id)
+  }, [shown])
+
+  // The card leans toward the pointer anywhere on the page — the same spring
+  // tilt as the collectible card on sitekmikolaj.pl, but driven from afar.
+  const spring = { stiffness: 90, damping: 18, mass: 0.6 }
+  const leanX = useSpring(0, spring)
+  const leanY = useSpring(0, spring)
+  useEffect(() => {
+    if (!shown || !finePointer()) return
+    const onMove = (e: MouseEvent) => {
+      leanY.set((e.clientX / window.innerWidth - 0.5) * 14)
+      leanX.set((0.5 - e.clientY / window.innerHeight) * 10)
+    }
+    window.addEventListener('mousemove', onMove, { passive: true })
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [leanX, leanY, shown])
 
   // The front face shows even steps, the back face shows odd steps, so the
   // content swaps while a face is turned away from the viewer.
@@ -792,88 +1412,38 @@ function FlipCard({ lang }: { lang: Lang }) {
   const front = faces[((frontStep % faces.length) + faces.length) % faces.length]
   const back = faces[((backStep % faces.length) + faces.length) % faces.length]
 
-  const Face = ({ data, back }: { data: typeof faces[number]; back?: boolean }) => {
-    const hue = faceHues[data.theme]
-    return (
-      <div
-        className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-2xl border border-[var(--color-line-strong)] bg-[var(--color-surface)] p-5 shadow-[0_34px_65px_-24px_rgba(20,22,26,0.45)]"
-        style={{ backfaceVisibility: 'hidden', transform: back ? 'rotateY(180deg)' : undefined }}
-      >
-        <FaceTexture theme={data.theme} hue={hue} />
-
-        <div className="relative z-10 flex items-start justify-between">
-          <span
-            className="flex h-10 w-10 items-center justify-center rounded-xl font-display text-base font-bold tracking-tight text-white"
-            style={{ backgroundColor: hue }}
-          >
-            SW
-          </span>
-          <span className="rounded-full border border-[var(--color-line)] bg-[var(--color-canvas)] px-2.5 py-1 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-[var(--color-ink-soft)]">
-            {resolve(data.tag)}
-          </span>
-        </div>
-
-        <div className="relative z-10">
-          {/* The studio name pings like a radar contact; the people's names stay put. */}
-          <p
-            className={`font-display text-lg font-semibold leading-tight tracking-tight text-[var(--color-ink)] xl:text-xl ${
-              data.theme === 'studio' ? '[animation:radar-ping_2.6s_ease-out_infinite]' : ''
-            }`}
-          >
-            {resolve(data.name)}
-          </p>
-          {/* The hue lives on the badge, the chips and the texture; on text this
-              small it fails contrast against the dark surface, so the role is ink. */}
-          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink)] xl:text-[11px]">
-            {resolve(data.role)}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-1">
-            {data.stack.map((item, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 rounded-md border border-[var(--color-line)] bg-[var(--color-canvas)]/85 px-1.5 py-[3px] font-mono text-[9px] leading-none text-[var(--color-ink-soft)] xl:text-[10px]"
-              >
-                <span style={{ color: hue }}>{faceIcons[item.icon]}</span>
-                {resolve(item.label)}
-              </span>
-            ))}
-          </div>
-
-          {/* The same line on every face, so it reads as the studio's motto
-              rather than a caption belonging to one person. */}
-          <p className="mt-3 border-t border-[var(--color-line)] pt-2.5 text-[10px] font-medium leading-snug text-[var(--color-ink)] xl:text-[11px]">
-            {t.motto[lang]}
-          </p>
-        </div>
-      </div>
-    )
-  }
+  if (!shown) return null
 
   return (
     <div
-      className="pointer-events-none absolute -right-4 top-6 hidden select-none lg:block xl:-right-14"
+      className="pointer-events-none absolute -right-4 top-20 hidden select-none lg:block xl:-right-10"
       style={{ perspective: 1400 }}
       aria-hidden="true"
     >
-      <div className="relative h-52 w-[19rem] xl:h-64 xl:w-[23rem]">
-        {/* Static tilt wrapper: the flip below spins inside this tilted frame */}
-        <div
+      <div className="relative h-60 w-[19rem] xl:h-64 xl:w-[22rem]">
+        <motion.div
           className="relative h-full w-full"
-          style={{
-            transformStyle: 'preserve-3d',
-            transform: 'rotateX(4deg) rotateY(8deg) rotateZ(1.5deg)',
-          }}
+          style={{ transformStyle: 'preserve-3d', rotateX: leanX, rotateY: leanY }}
         >
-          <motion.div
+          {/* Static tilt wrapper: the flip below spins inside this tilted frame */}
+          <div
             className="relative h-full w-full"
-            style={{ transformStyle: 'preserve-3d' }}
-            animate={{ rotateY: index * 180 }}
-            transition={{ duration: 0.75, ease: [0.65, 0, 0.35, 1] }}
+            style={{
+              transformStyle: 'preserve-3d',
+              transform: 'rotateX(4deg) rotateY(-8deg) rotateZ(-1.5deg)',
+            }}
           >
-            <Face data={front} />
-            <Face data={back} back />
-          </motion.div>
-        </div>
+            <motion.div
+              className="relative h-full w-full"
+              style={{ transformStyle: 'preserve-3d' }}
+              animate={{ rotateY: index * 180 }}
+              transition={{ duration: 0.8, ease: [0.65, 0, 0.35, 1] }}
+            >
+              <Face data={front} lang={lang} />
+              <Face data={back} back lang={lang} />
+            </motion.div>
+          </div>
+        </motion.div>
         <div className="absolute -bottom-8 left-1/2 h-6 w-52 -translate-x-1/2 rounded-full bg-[var(--color-ink)]/15 blur-lg" />
       </div>
     </div>
@@ -882,55 +1452,103 @@ function FlipCard({ lang }: { lang: Lang }) {
 
 /* ------------------------------------------------------------------ Hero */
 
-function Hero({ lang }: { lang: Lang }) {
+function Hero({ lang, onOpenForm, onOpen }: { lang: Lang; onOpenForm: () => void; onOpen: (p: Project) => void }) {
+  const headline = t.heroHeadline[lang]
+  const live = projects.filter((p) => p.liveUrl).length
+  const trust = [
+    `${projects.length} ${t.trustProjects[lang]}`,
+    `${live} ${t.trustLive[lang]}`,
+    t.trustStore[lang],
+    t.trustTeam[lang],
+  ]
+
   // Overflow stays visible so the flip card's shadow can spill past the
   // content column; the page root clips horizontally instead.
   return (
-    <section id="hero" className="relative py-12 sm:py-20">
-      <FlipCard lang={lang} />
-
-      <span className="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-positive)] opacity-60" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--color-positive)]" />
-        </span>
-        {t.available[lang]}
+    <section id="hero" className="relative pb-12 pt-10 sm:pb-16 sm:pt-12">
+      {/* The logo again, as a watermark far larger than the page. */}
+      <span
+        className="pointer-events-none absolute -right-[12vw] -top-10 select-none font-display text-[46vw] font-normal leading-none tracking-[-0.06em] text-[var(--color-ink)] opacity-[0.035] lg:-right-40 lg:text-[34rem]"
+        aria-hidden="true"
+      >
+        SW
       </span>
 
-      <p className="mt-5 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-accent)]">
-        {t.role[lang]}
-      </p>
+      <FlipCard lang={lang} />
 
-      {/* Narrower from lg up so the headline clears the flip card in the corner */}
-      <h1 className="mt-3 max-w-3xl font-display text-4xl font-semibold leading-[1.08] tracking-tight sm:text-6xl lg:max-w-xl xl:max-w-2xl">
-        {t.heroTitle[lang]}
-      </h1>
-      <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-ink-soft)] sm:text-lg">
-        {t.heroBody[lang]}
-      </p>
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="relative"
+      >
+        <span className="inline-flex items-center gap-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-positive)] opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--color-positive)]" />
+          </span>
+          {t.available[lang]}
+        </span>
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-        <a
-          href="#work"
-          onClick={(e) => {
-            e.preventDefault()
-            document.getElementById('work')?.scrollIntoView({ behavior: 'smooth' })
-          }}
-          className="rounded-xl bg-[var(--color-accent)] px-5 py-3 text-center text-sm font-semibold text-white shadow-sm transition-all hover:brightness-110 active:scale-[0.98]"
-        >
-          {t.cta[lang]}
-        </a>
-        <a
-          href="#contact"
-          onClick={(e) => {
-            e.preventDefault()
-            document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
-          }}
-          className="rounded-xl border border-[var(--color-line-strong)] bg-[var(--color-surface)] px-5 py-3 text-center text-sm font-semibold text-[var(--color-ink)] transition-colors hover:bg-[var(--color-canvas)]"
-        >
-          {t.ctaContact[lang]}
-        </a>
-      </div>
+        {/* Narrower from lg up so the headline clears the flip card in the corner */}
+        <h1 className="mt-6 max-w-4xl font-display text-[clamp(1.8rem,10vw,2.3rem)] font-light leading-[1.02] sm:text-7xl lg:max-w-[40rem] xl:max-w-[42rem] xl:text-[4.75rem]">
+          {headline.before}{' '}
+          <span className="relative inline-block whitespace-nowrap italic">
+            {headline.mark}
+            <motion.span
+              className="absolute -bottom-1 left-0 right-0 h-[3px] origin-left bg-[var(--color-accent)] sm:h-1"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.9, delay: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              aria-hidden="true"
+            />
+          </span>{' '}
+          {headline.after}
+        </h1>
+
+        <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-ink-soft)]">
+          {t.heroBody[lang]}
+        </p>
+
+        {/* The main call to action: describe the idea, see it read, take it to the builder */}
+        <div className="mt-8">
+          <IdeaPrompt lang={lang} onOpen={onOpen} />
+        </div>
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-8 gap-y-2 px-4 text-sm">
+          <button
+            onClick={onOpenForm}
+            className="group inline-flex min-h-11 items-center gap-2 font-semibold text-[var(--color-ink)]"
+          >
+            <span className="accent-line">{t.ctaContact[lang]}</span>
+            <span className="transition-transform group-hover:translate-x-1" aria-hidden="true">
+              →
+            </span>
+          </button>
+          <a
+            href="#work"
+            onClick={(e) => {
+              e.preventDefault()
+              scrollToSection('work')
+            }}
+            className="group inline-flex min-h-11 items-center gap-2 font-semibold text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+          >
+            {t.cta[lang]}
+            <span className="transition-transform group-hover:translate-y-0.5" aria-hidden="true">
+              ↓
+            </span>
+          </a>
+        </div>
+
+        <ul className="mt-12 flex flex-wrap gap-x-6 gap-y-2 border-t border-[var(--color-line)] pt-6 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-ink-soft)]">
+          {trust.map((item) => (
+            <li key={item} className="flex items-center gap-2.5">
+              <span className="h-px w-3 bg-[var(--color-accent)]" aria-hidden="true" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </motion.div>
     </section>
   )
 }
@@ -956,14 +1574,20 @@ function LockIcon({ className, stroke }: { className: string; stroke?: string })
 }
 
 /** Cover for a project whose preview is withheld — no screenshot exists to show. */
-function LockedCover({ color, label }: { color: string; label: string }) {
+function LockedCover({ label }: { label: string }) {
   return (
     <div
-      className="flex h-full w-full flex-col items-center justify-center gap-2"
-      style={{ background: `color-mix(in srgb, ${color} 12%, var(--color-surface))` }}
+      className="relative flex h-full w-full flex-col items-center justify-center gap-3 overflow-hidden bg-[var(--color-canvas)]"
+      style={{
+        backgroundImage: 'repeating-linear-gradient(135deg, var(--color-line) 0 1px, transparent 1px 12px)',
+      }}
     >
-      <LockIcon className="h-7 w-7" stroke={color} />
-      <span className="font-mono text-[11px] text-[var(--color-ink-soft)]">{label}</span>
+      <span className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-line-strong)] bg-[var(--color-surface)]">
+        <LockIcon className="h-5 w-5 text-[var(--color-ink-soft)]" />
+      </span>
+      <span className="bg-[var(--color-canvas)] px-2 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-ink-soft)]">
+        {label}
+      </span>
     </div>
   )
 }
@@ -973,95 +1597,108 @@ const statusStyles: Record<NonNullable<Project['status']>, { label: keyof typeof
   // conversation is the only badge allowed to use the positive colour.
   private: {
     label: 'statusPrivate',
-    className: 'border-[var(--color-line-strong)] bg-[var(--color-canvas)] text-[var(--color-ink-soft)]',
+    className: 'border-[var(--color-line-strong)] bg-[var(--color-surface)]/90 text-[var(--color-ink-soft)]',
   },
   ongoing: {
     label: 'statusOngoing',
-    className: 'border-[var(--color-warn)]/40 bg-[var(--color-warn)]/10 text-[var(--color-warn)]',
+    className: 'border-[var(--color-warn)]/40 bg-[var(--color-surface)]/90 text-[var(--color-warn)]',
   },
   forSale: {
     label: 'statusForSale',
-    className: 'border-[var(--color-positive)]/40 bg-[var(--color-positive)]/10 text-[var(--color-positive)]',
+    className: 'border-[var(--color-positive)]/40 bg-[var(--color-surface)]/90 text-[var(--color-positive)]',
   },
 }
 
 function StatusBadge({ status, lang }: { status: NonNullable<Project['status']>; lang: Lang }) {
   const style = statusStyles[status]
   return (
-    <span
-      className={`rounded-full border px-2 py-0.5 font-mono text-[10px] font-medium backdrop-blur ${style.className}`}
-    >
+    <span className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-medium backdrop-blur ${style.className}`}>
       {(t[style.label] as LS)[lang]}
     </span>
   )
 }
 
-function Card({ p, lang, onOpen }: { p: Project; lang: Lang; onOpen: () => void }) {
+/** A screenshot shown whole, inside a quiet browser-window frame. */
+function WindowFrame({ p, lang, children }: { p: Project; lang: Lang; children: ReactNode }) {
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-surface)] transition-all hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(20,22,26,0.35)]">
-      <button onClick={onOpen} className="relative block aspect-[16/11] w-full overflow-hidden text-left">
-        <div className="absolute inset-0" style={{ background: p.color, opacity: 0.08 }} />
-        {p.status === 'private' || !p.image ? (
-          <LockedCover color={p.color} label={t.previewBlocked[lang]} />
-        ) : (
-          <img
-            src={p.image}
-            alt={p.name[lang]}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          />
-        )}
-        <span
-          className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur"
-          style={{ background: `color-mix(in srgb, ${p.color} 82%, black 18%)` }}
-        >
+    <div className="relative overflow-hidden rounded-xl border border-[var(--color-line-strong)] bg-[var(--color-surface)] shadow-[0_28px_50px_-30px_rgba(20,20,20,0.45)]">
+      <div className="flex h-8 items-center gap-1.5 border-b border-[var(--color-line)] px-3">
+        {[0, 1, 2].map((i) => (
+          <span key={i} className="h-2 w-2 rounded-full bg-[var(--color-line-strong)]" />
+        ))}
+        <span className="ml-3 truncate font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">
           {categories.find((c) => c.key === p.category)?.label[lang]}
         </span>
-        {p.status && (
-          <span className="absolute right-3 top-3">
-            <StatusBadge status={p.status} lang={lang} />
-          </span>
-        )}
-      </button>
+      </div>
+      {children}
+    </div>
+  )
+}
 
-      {/* Every zone below has a reserved height, so cards match across rows too —
-          grid stretching alone only evens out cards within a single row. */}
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex min-h-[3.5rem] items-baseline justify-between gap-3">
-          <h3 className="line-clamp-2 font-display text-lg font-semibold tracking-tight">
-            {p.name[lang]}
-          </h3>
-          <span className="shrink-0 font-mono text-xs text-[var(--color-ink-faint)]">{p.year}</span>
+function Card({ p, index, lang, onOpen }: { p: Project; index: number; lang: Lang; onOpen: () => void }) {
+  return (
+    <article className="group flex h-full flex-col">
+      <Tilt className="rounded-xl" max={3}>
+        <WindowFrame p={p} lang={lang}>
+          {/* Mouse shortcuts to the same case study as the title; keyboard and
+              screen reader users get one stop per card, on the title. */}
+          <button
+            onClick={onOpen}
+            tabIndex={-1}
+            aria-hidden="true"
+            className="relative block aspect-[16/10] w-full overflow-hidden text-left"
+          >
+            {p.status === 'private' || !p.image ? (
+              <LockedCover label={t.previewBlocked[lang]} />
+            ) : (
+              <img
+                src={p.image}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              />
+            )}
+            {p.status && (
+              <span className="absolute right-3 top-3">
+                <StatusBadge status={p.status} lang={lang} />
+              </span>
+            )}
+          </button>
+        </WindowFrame>
+      </Tilt>
+
+      <div className="mt-5 flex flex-1 flex-col">
+        <div className="flex items-center justify-between font-mono text-[11px] text-[var(--color-ink-faint)]">
+          <span>{String(index).padStart(2, '0')}</span>
+          <span>{p.year}</span>
         </div>
-        <p className="mt-1.5 line-clamp-2 min-h-[2.85rem] text-sm leading-relaxed text-[var(--color-ink-soft)]">
-          {p.tagline[lang]}
-        </p>
+        <h3 className="mt-2 font-display text-3xl font-normal leading-tight sm:text-4xl">
+          <button onClick={onOpen} className="text-left" aria-label={`${t.caseStudy[lang]}: ${p.name[lang]}`}>
+            <span className="accent-line accent-line-lead">{p.name[lang]}</span>
+          </button>
+        </h3>
+        <p className="mt-3 line-clamp-2 max-w-xl text-base leading-relaxed text-[var(--color-ink-soft)]">{p.tagline[lang]}</p>
 
-        <div className="mt-3 mb-4 flex h-[1.4rem] items-center gap-1.5 overflow-hidden">
-          {p.stack.slice(0, 2).map((s) => (
-            <span
-              key={s}
-              className="shrink-0 whitespace-nowrap rounded-md bg-[var(--color-canvas)] px-2 py-0.5 font-mono text-[11px] text-[var(--color-ink-soft)]"
-            >
+        <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+          {p.stack.slice(0, 4).map((s) => (
+            <span key={s} className="whitespace-nowrap font-mono text-[11px] text-[var(--color-ink-faint)]">
               {s}
             </span>
           ))}
-          {p.stack.length > 2 && (
-            <span className="shrink-0 font-mono text-[11px] text-[var(--color-ink-faint)]">
-              +{p.stack.length - 2}
-            </span>
+          {p.stack.length > 4 && (
+            <span className="font-mono text-[11px] text-[var(--color-ink-faint)]">+{p.stack.length - 4}</span>
           )}
         </div>
 
-        <div
-          className="mt-auto flex items-center gap-2 pt-4"
-          style={{ borderTop: '1px solid var(--color-line)' }}
-        >
+        <div className="mt-auto flex items-center gap-5 pt-5">
           <button
             onClick={onOpen}
-            className="flex-1 rounded-lg bg-[var(--color-ink)] px-3 py-2 text-sm font-semibold text-[var(--color-canvas)] transition-all hover:brightness-125 active:scale-[0.98]"
+            tabIndex={-1}
+            aria-hidden="true"
+            className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[var(--color-ink)]"
           >
-            {t.caseStudy[lang]}
+            <span className="accent-line">{t.caseStudy[lang]}</span>
+            <span aria-hidden="true">→</span>
           </button>
           {/* Only a real link earns an arrow; the rest of the work is not public. */}
           {p.liveUrl && (
@@ -1069,10 +1706,9 @@ function Card({ p, lang, onOpen }: { p: Project; lang: Lang; onOpen: () => void 
               href={p.liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={t.viewLive[lang]}
-              className="rounded-lg border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-canvas)]"
+              className="inline-flex min-h-11 items-center gap-1.5 text-sm text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
             >
-              ↗
+              {t.viewLive[lang]} <span aria-hidden="true">↗</span>
             </a>
           )}
         </div>
@@ -1083,59 +1719,115 @@ function Card({ p, lang, onOpen }: { p: Project; lang: Lang; onOpen: () => void 
 
 /* ------------------------------------------------------------- CaseStudy */
 
-function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () => void }) {
+function CaseStudy({
+  p,
+  list,
+  lang,
+  onNavigate,
+  onClose,
+}: {
+  p: Project
+  list: Project[]
+  lang: Lang
+  onNavigate: (p: Project) => void
+  onClose: () => void
+}) {
+  // Paging runs through the projects the grid is showing (the active filter),
+  // wrapping round at either end; arrow keys do the same as the buttons.
+  const at = Math.max(0, list.indexOf(p))
+  const prev = list[(at - 1 + list.length) % list.length]
+  const next = list[(at + 1) % list.length]
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const isTop = useDialog(dialogRef, onClose)
+
+  // Arrows page only while this dialog is on top and nobody is typing (the
+  // palette or the contact form may be open over it).
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const onKey = (e: KeyboardEvent) => {
+      if (!isTop() || isTypingTarget(e) || list.length < 2) return
+      if (e.key === 'ArrowRight') onNavigate(next)
+      else if (e.key === 'ArrowLeft') onNavigate(prev)
+    }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onNavigate, next, prev, list.length, isTop])
+
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0 })
+  }, [p])
+
+  const pager = (dir: 'prev' | 'next') => (
+    <button
+      onClick={() => onNavigate(dir === 'prev' ? prev : next)}
+      aria-label={dir === 'prev' ? (lang === 'pl' ? 'Poprzedni projekt' : 'Previous project') : lang === 'pl' ? 'Następny projekt' : 'Next project'}
+      className="flex h-10 w-10 items-center justify-center rounded-full bg-[#141414]/60 text-[#f5f2ec] backdrop-blur transition-colors hover:bg-[#141414]/85"
+    >
+      <span aria-hidden="true">{dir === 'prev' ? '←' : '→'}</span>
+    </button>
+  )
 
   return (
     <div className="fixed inset-0 z-[110] flex items-end justify-center sm:items-center sm:p-6">
       <div
-        className="absolute inset-0 bg-[rgba(18,20,25,0.6)]"
+        className="absolute inset-0 bg-[rgba(20,20,20,0.6)] backdrop-blur-sm"
         style={{ animation: 'fade-in 0.25s ease' }}
         onClick={onClose}
       />
       <div
-        className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] shadow-2xl sm:rounded-3xl"
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={p.name[lang]}
+        className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-[var(--color-surface)] shadow-2xl sm:rounded-2xl"
         style={{ animation: 'tour-pop 0.35s cubic-bezier(0.22,1,0.36,1)' }}
       >
-        <div className="relative max-h-[38vh] shrink-0 overflow-hidden" style={{ aspectRatio: '16 / 9' }}>
-          <div className="absolute inset-0" style={{ background: p.color, opacity: 0.1 }} />
+        <div
+          className="relative max-h-[38vh] shrink-0 overflow-hidden border-b border-[var(--color-line)]"
+          style={{ aspectRatio: '16 / 9' }}
+        >
           {p.status === 'private' || !p.image ? (
-            <LockedCover color={p.color} label={t.previewBlocked[lang]} />
+            <LockedCover label={t.previewBlocked[lang]} />
           ) : (
-            <img src={p.image} alt={p.name[lang]} className="h-full w-full object-cover object-top" />
+            <img key={p.id} src={p.image} alt={p.name[lang]} className="h-full w-full object-cover object-top" style={{ animation: 'fade-in 0.3s ease' }} />
+          )}
+          {list.length > 1 && (
+            <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+              {pager('prev')}
+              <span className="rounded-full bg-[#141414]/60 px-3 py-1.5 font-mono text-[11px] text-[#f5f2ec] backdrop-blur">
+                {String(at + 1).padStart(2, '0')} / {String(list.length).padStart(2, '0')}
+              </span>
+              {pager('next')}
+            </div>
           )}
           <button
             onClick={onClose}
             aria-label={t.close[lang]}
-            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition-colors hover:bg-black/60"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#141414]/60 text-[#f5f2ec] backdrop-blur transition-colors hover:bg-[#141414]/80"
           >
             ✕
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
+        <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
-              {p.name[lang]}
-            </h2>
+            <h2 className="font-display text-3xl font-normal leading-tight sm:text-4xl">{p.name[lang]}</h2>
             <span className="font-mono text-sm text-[var(--color-ink-faint)]">{p.year}</span>
           </div>
+          <span className="mt-3 block h-[1.5px] w-12 bg-[var(--color-accent)]" aria-hidden="true" />
           {p.status && (
-            <div className="mt-3">
+            <div className="mt-4">
               <StatusBadge status={p.status} lang={lang} />
             </div>
           )}
-          <p className="mt-2 text-base text-[var(--color-ink-soft)]">{p.tagline[lang]}</p>
+          <p className="mt-4 text-base text-[var(--color-ink-soft)]">{p.tagline[lang]}</p>
 
           <div className="mt-6 grid grid-cols-2 gap-4 border-y border-[var(--color-line)] py-5 sm:grid-cols-3">
             <Meta label={t.roleLabel[lang]} value={p.role[lang]} />
             <Meta label={t.yearLabel[lang]} value={p.year} />
             <div className="col-span-2 sm:col-span-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
                 {t.stackLabel[lang]}
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1151,24 +1843,40 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
             </div>
           </div>
 
+          {/* What it changed for the client comes first; the engineering follows. */}
+          {p.results.length > 0 && (
+            <div className="mt-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-accent-soft)] p-5">
+              <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-accent-ink)]">
+                {t.resultsLabel[lang]}
+              </h3>
+              <ul className="mt-3 flex flex-col gap-2.5">
+                {p.results.map((r, i) => (
+                  <li key={i} className="flex items-start gap-3 text-[15px] leading-relaxed text-[var(--color-ink)]">
+                    <span className="mt-[0.15em] shrink-0 font-semibold text-[var(--color-accent-ink)]" aria-hidden="true">
+                      ✓
+                    </span>
+                    <span>{r[lang]}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="mt-6">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
+            <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
               {t.aboutLabel[lang]}
             </h3>
             <p className="mt-2 leading-relaxed text-[var(--color-ink-soft)]">{p.about[lang]}</p>
           </div>
 
           <div className="mt-6">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
+            <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
               {t.highlightsLabel[lang]}
             </h3>
-            <ul className="mt-3 flex flex-col gap-2.5">
+            <ul className="mt-3 flex flex-col gap-3">
               {p.highlights.map((h, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm leading-relaxed">
-                  <span
-                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{ background: p.color }}
-                  />
+                <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
+                  <span className="mt-[0.7em] h-[1.5px] w-3 shrink-0 bg-[var(--color-accent)]" />
                   <span className="text-[var(--color-ink)]">{h[lang]}</span>
                 </li>
               ))}
@@ -1182,9 +1890,9 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
                 href={p.liveUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 rounded-xl bg-[var(--color-accent)] px-4 py-3 text-center text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98]"
+                className="flex min-h-12 flex-1 items-center justify-center rounded-full bg-[var(--color-accent)] px-4 text-sm font-semibold text-[var(--color-on-accent)] transition-all hover:bg-[var(--color-ink)] hover:text-[var(--color-canvas)] active:scale-[0.98]"
               >
-                {t.viewLive[lang]}
+                {t.viewLive[lang]} ↗
               </a>
             )}
             {p.repoUrl && (
@@ -1192,7 +1900,7 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
                 href={p.repoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 rounded-xl border border-[var(--color-line-strong)] px-4 py-3 text-center text-sm font-semibold text-[var(--color-ink)] transition-colors hover:bg-[var(--color-canvas)]"
+                className="flex min-h-12 flex-1 items-center justify-center rounded-full border border-[var(--color-line-strong)] px-4 text-sm font-semibold text-[var(--color-ink)] transition-colors hover:bg-[var(--color-canvas)]"
               >
                 {t.viewCode[lang]}
               </a>
@@ -1209,6 +1917,36 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
               </p>
             )}
           </div>
+
+          {/* Read on: the next project, like the next article at the foot of a page */}
+          {list.length > 1 && (
+            <button
+              onClick={() => onNavigate(next)}
+              className="group mt-8 flex w-full items-center gap-4 border-t border-[var(--color-line)] pt-6 text-left"
+            >
+              <span className="h-14 w-24 shrink-0 overflow-hidden rounded-lg border border-[var(--color-line)] bg-[var(--color-canvas)]">
+                {next.status !== 'private' && next.image ? (
+                  <img src={next.image} alt="" loading="lazy" className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
+                ) : (
+                  <span
+                    className="block h-full w-full"
+                    style={{ backgroundImage: 'repeating-linear-gradient(135deg, var(--color-line-strong) 0 1px, transparent 1px 7px)' }}
+                  />
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">
+                  {lang === 'pl' ? 'Następny projekt' : 'Next project'} · {String(((at + 1) % list.length) + 1).padStart(2, '0')}
+                </span>
+                <span className="mt-1 block truncate font-display text-xl text-[var(--color-ink)]">
+                  <span className="accent-line">{next.name[lang]}</span>
+                </span>
+              </span>
+              <span className="text-lg text-[var(--color-ink-soft)] transition-transform group-hover:translate-x-1" aria-hidden="true">
+                →
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -1218,9 +1956,7 @@ function CaseStudy({ p, lang, onClose }: { p: Project; lang: Lang; onClose: () =
 function Meta({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-faint)]">
-        {label}
-      </p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">{label}</p>
       <p className="mt-1 text-sm font-medium text-[var(--color-ink)]">{value}</p>
     </div>
   )
@@ -1240,44 +1976,20 @@ const FORM_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT as string | undefi
 
 type SendState = 'idle' | 'sending' | 'sent' | 'mailed' | 'failed'
 
-function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
+function ContactDialog({
+  lang,
+  initialMessage = '',
+  onClose,
+}: {
+  lang: Lang
+  initialMessage?: string
+  onClose: () => void
+}) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const firstFieldRef = useRef<HTMLInputElement>(null)
   const [state, setState] = useState<SendState>('idle')
 
-  useEffect(() => {
-    // Hand focus to the dialog, give it back to whatever opened it, and keep
-    // the page behind from scrolling while it is open.
-    const opener = document.activeElement as HTMLElement | null
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    firstFieldRef.current?.focus()
-    return () => {
-      document.body.style.overflow = previousOverflow
-      opener?.focus?.()
-    }
-  }, [])
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      onClose()
-      return
-    }
-    if (e.key !== 'Tab') return
-    const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), input:not([type="hidden"]), textarea, [tabindex]:not([tabindex="-1"])'
-    )
-    if (!focusable || focusable.length === 0) return
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault()
-      last.focus()
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault()
-      first.focus()
-    }
-  }
+  useDialog(dialogRef, onClose, { initialFocus: firstFieldRef })
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -1305,22 +2017,20 @@ function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
     }
   }
 
-  // Floating label: the label rests inside the empty field and rides up into the
-  // top border once the field is focused or filled. The hint only shows on focus,
-  // so it never collides with the resting label.
+  // Underlined fields, like the logo: the rule under a field takes the accent while
+  // you type in it. The label rests in the field and rides up once it is
+  // focused or filled; the hint only shows on focus.
   const fieldClass =
-    'peer w-full rounded-xl border border-[var(--color-line-strong)] bg-transparent px-3.5 py-3 text-sm text-[var(--color-ink)] outline-none transition-colors placeholder:text-[var(--color-ink-faint)] placeholder:opacity-0 focus:border-[var(--color-accent)] focus:placeholder:opacity-100'
-  const labelBase =
-    'pointer-events-none absolute left-2.5 z-10 px-1 text-sm text-[var(--color-ink-faint)] transition-all duration-150'
-  const labelFloat =
-    'peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:-translate-y-1/2 peer-[:not(:placeholder-shown)]:bg-[var(--color-surface)] peer-[:not(:placeholder-shown)]:text-[11px] peer-focus:top-0 peer-focus:-translate-y-1/2 peer-focus:bg-[var(--color-surface)] peer-focus:text-[11px] peer-focus:font-medium peer-focus:text-[var(--color-accent)]'
-  const inputLabelClass = `${labelBase} top-1/2 -translate-y-1/2 ${labelFloat}`
-  const textareaLabelClass = `${labelBase} top-3 ${labelFloat}`
+    'peer w-full border-0 border-b border-[var(--color-line-strong)] bg-transparent px-0 pb-2.5 pt-6 text-base text-[var(--color-ink)] outline-none transition-colors placeholder:text-[var(--color-ink-faint)] placeholder:opacity-0 focus:border-[var(--color-accent)] focus:placeholder:opacity-100 focus-visible:outline-none'
+  const labelClass =
+    'pointer-events-none absolute left-0 top-[1.6rem] text-sm text-[var(--color-ink-faint)] transition-all duration-150 ' +
+    'peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:font-mono peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:uppercase peer-[:not(:placeholder-shown)]:tracking-[0.14em] ' +
+    'peer-focus:top-0 peer-focus:font-mono peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-[0.14em] peer-focus:text-[var(--color-accent-ink)]'
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center sm:p-6" onKeyDown={onKeyDown}>
+    <div className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center sm:p-6">
       <div
-        className="absolute inset-0 bg-[rgba(18,20,25,0.6)]"
+        className="absolute inset-0 bg-[rgba(20,20,20,0.6)] backdrop-blur-sm"
         style={{ animation: 'fade-in 0.25s ease' }}
         onClick={onClose}
       />
@@ -1329,27 +2039,21 @@ function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="contact-form-title"
-        className="relative flex max-h-[92vh] w-full max-w-md flex-col overflow-y-auto rounded-t-3xl bg-[var(--color-surface)] p-6 shadow-2xl sm:rounded-3xl sm:p-8"
+        className="relative flex max-h-[92vh] w-full max-w-md flex-col overflow-y-auto rounded-t-2xl bg-[var(--color-surface)] p-6 shadow-2xl sm:rounded-2xl sm:p-9"
         style={{ animation: 'tour-pop 0.3s cubic-bezier(0.22,1,0.36,1)' }}
       >
         <button
           onClick={onClose}
           aria-label={t.close[lang]}
-          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-canvas)] hover:text-[var(--color-ink)]"
+          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-[var(--color-ink-soft)] transition-colors hover:bg-[var(--color-canvas)] hover:text-[var(--color-ink)]"
         >
           ✕
         </button>
 
         {state === 'sent' || state === 'mailed' ? (
           <div className="py-6 text-center">
-            <span
-              className="mx-auto flex h-12 w-12 items-center justify-center rounded-full text-2xl"
-              style={{ background: 'color-mix(in srgb, var(--color-positive) 16%, transparent)' }}
-              aria-hidden="true"
-            >
-              ✓
-            </span>
-            <h2 id="contact-form-title" className="mt-4 font-display text-xl font-semibold tracking-tight">
+            <SWMark className="text-4xl text-[var(--color-ink)]" line="h-[2px]" />
+            <h2 id="contact-form-title" className="mt-6 font-display text-2xl font-normal">
               {t.formSentTitle[lang]}
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-soft)]">
@@ -1357,19 +2061,20 @@ function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
             </p>
             <button
               onClick={onClose}
-              className="mt-6 rounded-xl bg-[var(--color-ink)] px-5 py-2.5 text-sm font-semibold text-[var(--color-canvas)] transition-all hover:brightness-125 active:scale-[0.98]"
+              className="mt-6 min-h-11 rounded-full bg-[var(--color-ink)] px-6 text-sm font-semibold text-[var(--color-canvas)] transition-all active:scale-[0.98]"
             >
               {t.close[lang]}
             </button>
           </div>
         ) : (
           <>
-            <h2 id="contact-form-title" className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
+            <h2 id="contact-form-title" className="font-display text-3xl font-normal">
               {t.formTitle[lang]}
             </h2>
-            <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-ink-soft)]">{t.formBody[lang]}</p>
+            <span className="mt-3 block h-[1.5px] w-12 bg-[var(--color-accent)]" aria-hidden="true" />
+            <p className="mt-4 text-sm leading-relaxed text-[var(--color-ink-soft)]">{t.formBody[lang]}</p>
 
-            <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+            <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
               {/* Bot bait: Formspree drops anything that fills this in. */}
               <input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
 
@@ -1383,7 +2088,7 @@ function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
                   placeholder={t.formNameHint[lang]}
                   className={fieldClass}
                 />
-                <label htmlFor="contact-name" className={inputLabelClass}>
+                <label htmlFor="contact-name" className={labelClass}>
                   {t.formName[lang]}
                 </label>
               </div>
@@ -1398,7 +2103,7 @@ function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
                   placeholder={t.formEmailHint[lang]}
                   className={fieldClass}
                 />
-                <label htmlFor="contact-email" className={inputLabelClass}>
+                <label htmlFor="contact-email" className={labelClass}>
                   {t.formEmail[lang]}
                 </label>
               </div>
@@ -1408,11 +2113,12 @@ function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
                   id="contact-message"
                   name="message"
                   required
-                  rows={4}
+                  rows={initialMessage ? 4 : 3}
+                  defaultValue={initialMessage}
                   placeholder={t.formMessageHint[lang]}
                   className={`resize-y ${fieldClass}`}
                 />
-                <label htmlFor="contact-message" className={textareaLabelClass}>
+                <label htmlFor="contact-message" className={labelClass}>
                   {t.formMessage[lang]}
                 </label>
               </div>
@@ -1426,7 +2132,7 @@ function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
               <button
                 type="submit"
                 disabled={state === 'sending'}
-                className="mt-1 rounded-xl bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-5 min-h-12 rounded-full bg-[var(--color-accent)] px-5 text-sm font-semibold text-[var(--color-on-accent)] transition-all hover:bg-[var(--color-ink)] hover:text-[var(--color-canvas)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {state === 'sending' ? t.formSending[lang] : state === 'failed' ? t.formRetry[lang] : t.formSend[lang]}
               </button>
@@ -1436,7 +2142,7 @@ function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
               {t.formOr[lang]}{' '}
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
-                className="text-[var(--color-ink-soft)] underline underline-offset-4 transition-colors hover:text-[var(--color-ink)]"
+                className="accent-line text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
               >
                 {CONTACT_EMAIL}
               </a>
@@ -1447,51 +2153,129 @@ function ContactDialog({ lang, onClose }: { lang: Lang; onClose: () => void }) {
     </div>
   )
 }
+
 /* --------------------------------------------------------------- Contact */
 
-function Contact({ lang, onOpenForm }: { lang: Lang; onOpenForm: () => void }) {
+function Contact({ lang, onOpenForm }: { lang: Lang; onOpenForm: (message?: string) => void }) {
+  const [copied, setCopied] = useState(false)
+  const copyEmail = () => {
+    navigator.clipboard?.writeText(CONTACT_EMAIL).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1600)
+  }
+
+  // A pitch on the left, the brief slip on the right: the visitor can tell us
+  // what they need in four taps before writing a single sentence.
   return (
-    <section
-      id="contact"
-      className="my-14 overflow-hidden rounded-3xl border border-white/10 px-6 py-12 text-center sm:px-12 sm:py-16"
-      style={{ background: 'linear-gradient(135deg, #1b1e27 0%, #14161a 55%, #201b3a 100%)' }}
-    >
-      <h2 className="mx-auto max-w-xl font-display text-2xl font-semibold tracking-tight text-white sm:text-4xl">
-        {t.contactTitle[lang]}
-      </h2>
-      <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-white/70 sm:text-base">
-        {t.contactBody[lang]}
-      </p>
-      <button
-        onClick={onOpenForm}
-        className="mt-7 inline-block rounded-xl bg-white px-6 py-3 text-sm font-semibold text-[#14161a] transition-transform hover:scale-[1.02] active:scale-[0.98]"
-      >
-        {t.email[lang]}
-      </button>
-      {/* The address stays visible: some people would rather use their own mail client. */}
-      <p className="mt-6 font-mono text-xs text-white/50">
-        <a href={`mailto:${CONTACT_EMAIL}`} className="transition-colors hover:text-white/80">
-          {CONTACT_EMAIL}
-        </a>
-      </p>
+    <section id="contact" className="relative pb-24 pt-16 sm:pb-32 sm:pt-24">
+      <div className="grid items-center gap-16 lg:grid-cols-[1fr_auto] lg:gap-20">
+        <div>
+          <p className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--color-accent-ink)]">
+            {String(sectionNumbers.contact).padStart(2, '0')} — {t.sectionContact[lang]}
+          </p>
+          <h2 className="mt-5 max-w-xl font-display text-5xl font-light leading-[0.98] sm:text-7xl">
+            {t.contactTitle[lang]}
+          </h2>
+          <motion.span
+            className="mt-6 block h-[2px] w-24 origin-left bg-[var(--color-accent)]"
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            aria-hidden="true"
+          />
+          <p className="mt-6 max-w-md text-base leading-relaxed text-[var(--color-ink-soft)] sm:text-lg">
+            {lang === 'pl'
+              ? 'Zaznacz na bilecie, czego potrzebujesz — z tym przyjdziemy na pierwszą rozmowę. Wolisz po swojemu? Napisz wprost.'
+              : 'Tick on the slip what you need — we will bring it to the first call. Rather do it your way? Just write.'}
+          </p>
+
+          {/* Who answers: the three of us, not a sales inbox. */}
+          <div className="mt-10 flex items-center gap-4">
+            <div className="flex -space-x-3">
+              {teamMembers.map((m) => (
+                <img
+                  key={m.name.en}
+                  src={m.image}
+                  alt={m.name[lang]}
+                  loading="lazy"
+                  className="h-11 w-11 rounded-full border-2 border-[var(--color-canvas)] object-cover grayscale"
+                />
+              ))}
+            </div>
+            <p className="text-sm leading-snug text-[var(--color-ink-soft)]">
+              {lang === 'pl' ? 'Odpisuje ktoś z naszej trójki.' : 'One of the three of us replies.'}
+              <span className="mt-0.5 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-ink-faint)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-positive)]" aria-hidden="true" />
+                {t.replyPromise[lang]}
+              </span>
+            </p>
+          </div>
+
+          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <a href={`mailto:${CONTACT_EMAIL}`} className="accent-line font-display text-2xl text-[var(--color-ink)] sm:text-3xl">
+              {CONTACT_EMAIL}
+            </a>
+            <button
+              onClick={copyEmail}
+              className="min-h-10 rounded-full border border-[var(--color-line-strong)] px-4 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-ink)] hover:text-[var(--color-ink)]"
+            >
+              {copied ? (lang === 'pl' ? 'Skopiowano ✓' : 'Copied ✓') : lang === 'pl' ? 'Kopiuj' : 'Copy'}
+            </button>
+          </div>
+          <button
+            onClick={() => onOpenForm()}
+            className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[var(--color-ink)]"
+          >
+            <span className="accent-line">{lang === 'pl' ? 'Albo napisz wiadomość bez briefu' : 'Or write without the brief'}</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+
+        <BriefTicket lang={lang} onSend={onOpenForm} />
+      </div>
     </section>
   )
 }
 
+/* ---------------------------------------------------------------- Footer */
+
 function Footer({ lang }: { lang: Lang }) {
+  const links = [
+    { label: 'GitHub', href: 'https://github.com' },
+    { label: 'Dribbble', href: 'https://dribbble.com' },
+    { label: 'LinkedIn', href: 'https://linkedin.com' },
+  ]
+
+  // Closes the page the way the logo opens it: the mark, large and centred.
   return (
-    <footer className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-5 py-8 text-xs text-[var(--color-ink-faint)] sm:flex-row sm:px-8">
-      <span>© 2025 {t.brand[lang]}</span>
-      <div className="flex gap-4">
-        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--color-ink-soft)]">
-          GitHub
+    <footer className="relative z-[2] mx-auto w-full max-w-6xl px-4 pb-28 pt-8 sm:px-8 lg:pb-12">
+      <div className="flex flex-col items-center border-t border-[var(--color-line)] pt-16 text-center">
+        <SWMark className="text-7xl text-[var(--color-ink)] sm:text-8xl" line="h-[2px]" />
+        <p className="mt-8 max-w-sm font-display text-lg font-light italic text-[var(--color-ink-soft)]">
+          {t.footerTagline[lang]}
+        </p>
+        <a href={`mailto:${CONTACT_EMAIL}`} className="accent-line mt-6 font-mono text-sm text-[var(--color-ink)]">
+          {CONTACT_EMAIL}
         </a>
-        <a href="https://dribbble.com" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--color-ink-soft)]">
-          Dribbble
-        </a>
-        <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--color-ink-soft)]">
-          LinkedIn
-        </a>
+      </div>
+      <div className="mt-14 flex flex-col items-center justify-between gap-4 font-mono text-[11px] text-[var(--color-ink-faint)] sm:flex-row">
+        <span>
+          © {new Date().getFullYear()} {t.brand[lang]}
+        </span>
+        <div className="flex gap-6">
+          {links.map((l) => (
+            <a
+              key={l.label}
+              href={l.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="accent-line hover:text-[var(--color-ink)]"
+            >
+              {l.label}
+            </a>
+          ))}
+        </div>
       </div>
     </footer>
   )

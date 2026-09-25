@@ -6,100 +6,255 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><!-- figma:title --></title>
     <!-- figma:head-end -->
+    <script>
+      // Pick the theme before anything paints, so dark-mode visitors never see
+      // a light flash: a saved choice wins, otherwise follow the system.
+      try {
+        var saved = localStorage.getItem('sw-theme')
+        var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches
+        document.documentElement.classList.toggle('dark', dark)
+        // The look (Aurora by default, or another from the concept dock) is remembered the same way.
+        var skin = localStorage.getItem('sw-skin')
+        if (skin === 'papier' || skin === 'swiss') document.documentElement.dataset.skin = skin
+      } catch (e) {}
+    </script>
+    <!-- Only the glyphs the boot screen draws (the mark and the counter), so the
+         logo can be traced in its real face before the bundle's fonts arrive. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- media=print keeps it from blocking the boot script below; it switches
+         itself on when it arrives. -->
+    <link
+      id="boot-font"
+      rel="stylesheet"
+      media="print"
+      onload="this.media = 'all'; this.dataset.in = '1'"
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@600&family=Fraunces:opsz,wght@144,400&display=block&text=SW0123456789"
+    />
     <style>
       /* Boot screen. Inline on purpose: a loader shipped inside the bundle would
-         only appear after the bundle it is meant to cover has already arrived. */
+         only appear after the bundle it is meant to cover has already arrived.
+         The logo traces itself, its accent line doubles as the progress bar,
+         and on the way out the letters become a window onto the page. */
       #boot {
+        --b-bg: #07060d;
+        --b-ink: #f4f1ff;
+        --b-soft: rgba(244, 241, 255, 0.46);
+        --b-accent: #7cf7d4;
+        --b-orb-a: rgba(124, 58, 237, 0.55);
+        --b-orb-b: rgba(20, 200, 170, 0.38);
+        --b-orb-c: rgba(255, 92, 168, 0.34);
+        --b-face: 'Syne', ui-sans-serif, system-ui, sans-serif;
         position: fixed;
         inset: 0;
         z-index: 200;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 24px;
-        background: #0e1116;
+        overflow: hidden;
+        background: var(--b-bg);
+        color: var(--b-ink);
         font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-        transition: opacity 0.45s ease;
+      }
+      /* Swiss: black with its one red. */
+      :root[data-skin='swiss'] #boot { --b-bg: #0e0e0e; --b-accent: #ff3b1f; --b-orb-a: rgba(255, 59, 31, 0.3); --b-orb-b: rgba(241, 239, 233, 0.08); --b-orb-c: rgba(255, 59, 31, 0.15); }
+      :root[data-skin='papier'] #boot {
+        --b-bg: #141414;
+        --b-ink: #f5f2ec;
+        --b-soft: rgba(245, 242, 236, 0.46);
+        --b-accent: #e4573f;
+        --b-orb-a: rgba(228, 87, 63, 0.4);
+        --b-orb-b: rgba(214, 160, 90, 0.26);
+        --b-orb-c: rgba(160, 70, 50, 0.3);
+        --b-face: 'Fraunces', Georgia, serif;
       }
       #boot[data-leaving='true'] {
-        opacity: 0;
         pointer-events: none;
       }
-      /* Background loop. Decorative only: it is never waited on, so a slow or
-         blocked video just leaves the terminal on a flat dark field. */
+
+      /* Our desk, far back and slowly pushing in. Decorative only: it is never
+         waited on, so a slow or blocked video just leaves the sky. */
       #boot-video {
         position: absolute;
         inset: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
-        opacity: 0.85;
+        opacity: 0.2;
+        filter: grayscale(0.5) contrast(1.1);
+        animation: boot-push 6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
       }
-      /* Vignette only — the log gets its own backing plate instead of drowning
-         the whole clip to stay readable. */
-      #boot-veil {
+      @keyframes boot-push {
+        from { transform: scale(1.14); }
+        to { transform: scale(1.02); }
+      }
+
+      /* The same three lights as the page's sky, closer and brighter. */
+      .boot-orb {
+        position: absolute;
+        width: 62vmax;
+        height: 62vmax;
+        border-radius: 50%;
+        filter: blur(60px);
+        mix-blend-mode: screen;
+        will-change: transform, opacity;
+        opacity: 0;
+        animation: boot-orb-in 1.6s ease forwards, boot-drift 9s ease-in-out infinite alternate;
+      }
+      .boot-orb:nth-of-type(1) { left: -18vmax; top: -24vmax; background: radial-gradient(circle, var(--b-orb-a), transparent 65%); }
+      .boot-orb:nth-of-type(2) { right: -22vmax; bottom: -30vmax; background: radial-gradient(circle, var(--b-orb-b), transparent 65%); animation-delay: 0.2s, -3s; }
+      .boot-orb:nth-of-type(3) { left: 30%; top: 40%; width: 40vmax; height: 40vmax; background: radial-gradient(circle, var(--b-orb-c), transparent 65%); animation-delay: 0.4s, -6s; }
+      @keyframes boot-orb-in { to { opacity: 1; } }
+      @keyframes boot-drift {
+        from { translate: 0 0; }
+        to { translate: 8vmax -6vmax; }
+      }
+
+      /* Film grain, so the dark field has texture instead of banding. */
+      #boot-grain {
+        position: absolute;
+        inset: -50%;
+        opacity: 0.09;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        animation: boot-grain 0.6s steps(3) infinite;
+      }
+      @keyframes boot-grain {
+        0% { transform: translate(0, 0); }
+        33% { transform: translate(-3%, 2%); }
+        66% { transform: translate(2%, -3%); }
+      }
+
+      .boot-stage {
         position: absolute;
         inset: 0;
-        background: radial-gradient(ellipse at center, rgba(14, 17, 22, 0.15) 0%, rgba(14, 17, 22, 0.82) 80%);
-      }
-      .boot-panel {
-        position: relative;
-        width: 100%;
-        max-width: 440px;
-        padding: 22px 24px 18px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        background: rgba(11, 13, 18, 0.86);
-        backdrop-filter: blur(8px);
-      }
-      .boot-cmd {
-        color: #6f7784;
-        font-size: 12px;
-        line-height: 1.9;
-      }
-      .boot-cmd b {
-        color: #f1f3f7;
-        font-weight: 500;
-      }
-      .boot-log {
-        margin: 10px 0 18px;
-        min-height: 92px;
-        font-size: 12px;
-        line-height: 1.9;
-        color: #9aa1ad;
-      }
-      .boot-log div {
-        opacity: 0;
-        transform: translateY(3px);
-        transition: opacity 0.25s ease, transform 0.25s ease;
-      }
-      .boot-log div[data-on='true'] {
-        opacity: 1;
-        transform: none;
-      }
-      .boot-log i {
-        color: #0f9d6a;
-        font-style: normal;
-      }
-      .boot-track {
-        height: 2px;
-        background: #2b303b;
-        overflow: hidden;
-      }
-      .boot-fill {
-        height: 100%;
-        width: 0;
-        background: #4f46e5;
-        transition: width 0.3s ease;
-      }
-      .boot-foot {
         display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #boot-mark {
+        width: min(64vw, 440px);
+        overflow: visible;
+      }
+      #boot-glyphs {
+        font-family: var(--b-face);
+        font-weight: 600;
+        fill: var(--b-ink);
+        fill-opacity: 0;
+        stroke: var(--b-accent);
+        stroke-width: 0.9;
+        stroke-dasharray: 520;
+        stroke-dashoffset: 520;
+        stroke-linejoin: round;
+      }
+      :root[data-skin='papier'] #boot-glyphs {
+        font-weight: 400;
+      }
+      #boot[data-drawing='true'] #boot-glyphs {
+        animation:
+          boot-trace 1.25s cubic-bezier(0.65, 0, 0.35, 1) forwards,
+          boot-ink 0.6s ease 1s forwards;
+      }
+      @keyframes boot-trace { to { stroke-dashoffset: 0; } }
+      @keyframes boot-ink {
+        to { fill-opacity: 1; stroke-opacity: 0; }
+      }
+      /* The mark's accent line, filled by the real loading progress. */
+      #boot-line-track { fill: var(--b-soft); opacity: 0.25; }
+      #boot-line {
+        fill: var(--b-accent);
+        transform-box: fill-box;
+        transform-origin: left center;
+        transform: scaleX(0);
+      }
+
+      .boot-rim {
+        position: absolute;
+        inset: 0;
+        stroke: var(--b-accent);
+        filter: drop-shadow(0 0 10px var(--b-accent));
+      }
+
+      .boot-chrome {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
         justify-content: space-between;
-        margin-top: 10px;
-        font-size: 10px;
-        letter-spacing: 0.08em;
+        padding: clamp(18px, 4vw, 40px);
+        font-size: 11px;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: #5a6270;
+        color: var(--b-soft);
+        transition: opacity 0.3s ease, transform 0.5s ease;
+      }
+      #boot[data-leaving='true'] .boot-chrome {
+        opacity: 0;
+        transform: scale(0.98);
+      }
+      .boot-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .boot-brand {
+        color: var(--b-ink);
+      }
+      .boot-brand i {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        margin-right: 10px;
+        border-radius: 50%;
+        background: var(--b-accent);
+        box-shadow: 0 0 12px var(--b-accent);
+        font-style: normal;
+        animation: boot-pulse 1.2s ease-in-out infinite;
+      }
+      @keyframes boot-pulse { 50% { opacity: 0.35; } }
+      .boot-steps {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .boot-steps li {
+        transition: color 0.3s ease;
+      }
+      .boot-steps li b {
+        font-weight: 400;
+        opacity: 0.55;
+      }
+      .boot-steps li[data-on='true'] {
+        color: var(--b-accent);
+      }
+      .boot-count {
+        display: flex;
+        font-family: var(--b-face);
+        font-size: clamp(64px, 12vw, 150px);
+        font-weight: 600;
+        line-height: 0.8;
+        letter-spacing: -0.04em;
+        color: var(--b-ink);
+      }
+      :root[data-skin='papier'] .boot-count {
+        font-weight: 400;
+      }
+      /* Fixed-width digits, so the counter does not wobble as it climbs. */
+      .boot-count span {
+        width: 0.66em;
+        text-align: center;
+      }
+      .boot-count small {
+        align-self: flex-start;
+        margin-left: 0.1em;
+        font-size: 0.24em;
+        line-height: 1;
+        color: var(--b-accent);
+      }
+      @media (max-width: 640px) {
+        .boot-row { flex-direction: column; align-items: flex-start; }
+        .boot-row .boot-count { align-self: flex-end; }
+        .boot-skip { display: none; }
       }
       @media (prefers-reduced-motion: reduce) {
         #boot {
@@ -119,21 +274,33 @@
       <video id="boot-video" autoplay muted loop playsinline preload="auto">
         <source src="/boot/dev-loop.mp4" type="video/mp4" />
       </video>
-      <div id="boot-veil"></div>
-      <div class="boot-panel">
-        <p class="boot-cmd">
-          <span style="color: #4f46e5">~</span> sw-development $ <b>pnpm build</b>
-        </p>
-        <div class="boot-log">
-          <div data-step>resolving dependencies</div>
-          <div data-step>compiling components</div>
-          <div data-step>optimizing assets</div>
-          <div data-step><i>ready</i> <span data-ms>—</span></div>
+      <div class="boot-orb"></div>
+      <div class="boot-orb"></div>
+      <div class="boot-orb"></div>
+      <div id="boot-grain"></div>
+
+      <div class="boot-stage">
+        <!-- The SWMark from src/ui.tsx: the letters over an accent line 1.35em wide. -->
+        <svg id="boot-mark" viewBox="0 0 240 150">
+          <text id="boot-glyphs" x="120" y="100" text-anchor="middle" font-size="110" letter-spacing="-5.5">SW</text>
+          <rect id="boot-line-track" x="45.75" y="118" width="148.5" height="2.5" />
+          <rect id="boot-line" x="45.75" y="118" width="148.5" height="2.5" />
+        </svg>
+      </div>
+
+      <div class="boot-chrome">
+        <div class="boot-row">
+          <span class="boot-brand"><i></i>SW Development</span>
+          <span class="boot-skip">Pomiń · dowolny klawisz</span>
         </div>
-        <div class="boot-track"><div class="boot-fill" id="boot-fill"></div></div>
-        <div class="boot-foot">
-          <span>SW Development</span>
-          <span>skip · press any key</span>
+        <div class="boot-row">
+          <ol class="boot-steps">
+            <li data-step><b>01</b> Pomysł</li>
+            <li data-step><b>02</b> Projekt</li>
+            <li data-step><b>03</b> Kod</li>
+            <li data-step><b>04</b> Start</li>
+          </ol>
+          <div class="boot-count"><span>0</span><span>0</span><span>0</span><small>%</small></div>
         </div>
       </div>
     </div>
@@ -161,49 +328,192 @@
           sessionStorage.setItem('sw-boot', '1')
         } catch (e) {}
 
-        var MIN_MS = 1400
-        var started = Date.now()
+        var papier = document.documentElement.dataset.skin === 'papier'
+        var face = papier ? '400 110px Fraunces' : '600 110px Syne'
+        var SHOW_MS = 1700 // from the first stroke of the logo to 100%
+        var svg = document.getElementById('boot-mark')
+        var glyphs = document.getElementById('boot-glyphs')
+        var line = document.getElementById('boot-line')
+        var digits = boot.querySelectorAll('.boot-count span')
         var steps = boot.querySelectorAll('[data-step]')
-        var fill = document.getElementById('boot-fill')
-        var done = false
-        var timers = []
+        var drawStart = 0
+        var ready = false
+        var skipped = false
+        var leaving = false
+        var fontIn = false
+        var shown = 0
 
-        for (var i = 0; i < steps.length - 1; i++) {
-          ;(function (index) {
-            timers.push(
-              setTimeout(function () {
-                steps[index].setAttribute('data-on', 'true')
-                fill.style.width = (index + 1) * 28 + '%'
-              }, 160 + index * 190)
-            )
-          })(i)
+        // The show waits until the page behind it has mounted. Parsing the bundle
+        // blocks the main thread for hundreds of milliseconds, and the tracing and
+        // the counter run on that thread: started any earlier they stutter. Until
+        // then only the sky and the video move, which the compositor handles alone.
+        // It also waits for the logo's face, or the outline would be traced in a
+        // fallback font and jump.
+        function draw() {
+          if (drawStart) return
+          drawStart = performance.now()
+          boot.setAttribute('data-drawing', 'true')
+        }
+        function maybeDraw() {
+          // The app still settles for a moment after mounting (effects, images),
+          // so the first stroke waits for an idle thread, at most 500 ms.
+          if (!fontIn || !ready) return
+          if (window.requestIdleCallback) requestIdleCallback(function () {
+            setTimeout(draw, 160)
+          }, { timeout: 500 })
+          else setTimeout(draw, 200)
+        }
+        function fontLoaded() {
+          if (fontIn) return
+          fontIn = true
+          maybeDraw()
+        }
+        var fontLink = document.getElementById('boot-font')
+        var loadFace = function () {
+          if (document.fonts && document.fonts.load) document.fonts.load(face, 'SW').then(fontLoaded, fontLoaded)
+          else fontLoaded()
+        }
+        if (fontLink.dataset.in) loadFace()
+        else fontLink.addEventListener('load', loadFace)
+        fontLink.addEventListener('error', fontLoaded)
+        setTimeout(fontLoaded, 1500)
+
+        // The counter follows the tracing; the page is already loaded by the time
+        // it starts, so it only has to be smooth, not honest about a download.
+        function tick(now) {
+          if (leaving) return
+          var elapsed = drawStart ? now - drawStart : 0
+          var target = skipped ? 100 : Math.min(100, (elapsed / SHOW_MS) * 100)
+          shown += (target - shown) * (skipped ? 0.35 : 0.12)
+          if (target === 100 && shown > 99.4) shown = 100
+          var n = String(Math.floor(shown)).padStart(3, '0')
+          for (var i = 0; i < 3; i++) digits[i].textContent = n[i]
+          line.style.transform = 'scaleX(' + shown / 100 + ')'
+          for (var s = 0; s < steps.length; s++) steps[s].setAttribute('data-on', shown >= s * 25 + 12 ? 'true' : 'false')
+          if (shown === 100) return reveal()
+          requestAnimationFrame(tick)
+        }
+        requestAnimationFrame(tick)
+
+        // The way out: the letters are punched out of the whole screen and zoomed
+        // until they are bigger than it, so the page arrives through the logo.
+        function reveal() {
+          leaving = true
+          boot.setAttribute('data-leaving', 'true')
+          window.dispatchEvent(new Event('sw-boot-reveal'))
+
+          var W = innerWidth
+          var H = innerHeight
+          var m = glyphs.getScreenCTM()
+          var k = m ? m.a : 1
+          var x = m ? m.a * 120 + m.e : W / 2
+          var y = m ? m.d * 100 + m.f : H / 2
+          var size = 110 * k
+          var track = -5.5 * k
+          var o = innerPoint(x, y, size, track)
+
+          var NS = 'http://www.w3.org/2000/svg'
+          var defs = document.createElementNS(NS, 'svg')
+          defs.setAttribute('width', '0')
+          defs.setAttribute('height', '0')
+          defs.style.position = 'absolute'
+          defs.innerHTML =
+            '<mask id="boot-hole" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="0" y="0" width="' + W + '" height="' + H + '">' +
+            '<rect width="' + W + '" height="' + H + '" fill="#fff"/>' +
+            '<g><text x="' + x + '" y="' + y + '" text-anchor="middle" font-size="' + size + '" letter-spacing="' + track + '" ' +
+            'style="font-family:' + getComputedStyle(glyphs).fontFamily.replace(/"/g, "'") + ';font-weight:' + (papier ? 400 : 600) + '" fill="#000">SW</text></g></mask>'
+          boot.appendChild(defs)
+          var hole = defs.querySelector('g')
+
+          // An accent rim traced around the window, zooming with it; it stands
+          // in for the drawn mark, whose antialiased edge would ghost otherwise.
+          var rim = document.createElementNS(NS, 'svg')
+          rim.setAttribute('class', 'boot-rim')
+          rim.setAttribute('width', W)
+          rim.setAttribute('height', H)
+          rim.innerHTML = '<g>' + defs.querySelector('text').outerHTML.replace('fill="#000"', 'fill="none" stroke-width="3" vector-effect="non-scaling-stroke"') + '</g>'
+          boot.appendChild(rim)
+          var rimG = rim.querySelector('g')
+          svg.style.visibility = 'hidden'
+          boot.style.webkitMask = 'url(#boot-hole)'
+          boot.style.mask = 'url(#boot-hole)'
+
+          // Big enough that the stroke around the zoom point outgrows the screen.
+          var reach = Math.min(260, (Math.hypot(W, H) / Math.max(2, o.r)) * 1.15)
+          var DUR = skipped ? 800 : 1300
+          var t0 = performance.now()
+          function zoom(now) {
+            var p = Math.min(1, (now - t0) / DUR)
+            // Hold on the open letters for a beat, then accelerate through them.
+            var e = p < 0.26 ? 0 : Math.pow((p - 0.26) / 0.74, 3.2)
+            var s = 1 + (reach - 1) * e
+            var tf = 'translate(' + o.x + ' ' + o.y + ') scale(' + s + ') translate(' + -o.x + ' ' + -o.y + ')'
+            hole.setAttribute('transform', tf)
+            rimG.setAttribute('transform', tf)
+            // Also fades, so a browser without HTML masking still gets out cleanly.
+            boot.style.opacity = p < 0.72 ? 1 : 1 - (p - 0.72) / 0.28
+            if (p < 1) requestAnimationFrame(zoom)
+            else boot.remove()
+          }
+          requestAnimationFrame(zoom)
         }
 
-        function finish() {
-          if (done) return
-          done = true
-          timers.forEach(clearTimeout)
-          for (var i = 0; i < steps.length; i++) steps[i].setAttribute('data-on', 'true')
-          boot.querySelector('[data-ms]').textContent = 'in ' + Math.round(performance.now()) + ' ms'
-          fill.style.width = '100%'
-          setTimeout(function () {
-            boot.setAttribute('data-leaving', 'true')
-            setTimeout(function () {
-              boot.remove()
-            }, 500)
-          }, 260)
+        // Where to zoom from: the point deepest inside a letter stroke, found by
+        // drawing the logo on a canvas and measuring the ink around each pixel.
+        // Zooming from a gap between letters would never open the screen.
+        function innerPoint(x, y, size, track) {
+          var fallback = { x: x, y: y - size * 0.35, r: size * 0.06 }
+          try {
+            var w = Math.ceil(size * 1.6)
+            var h = Math.ceil(size * 1.1)
+            var c = document.createElement('canvas')
+            c.width = w
+            c.height = h
+            var ctx = c.getContext('2d', { willReadFrequently: true })
+            ctx.font = face.replace('110px', size + 'px')
+            if ('letterSpacing' in ctx) ctx.letterSpacing = track + 'px'
+            ctx.textAlign = 'center'
+            ctx.fillText('SW', w / 2, h * 0.85)
+            var data = ctx.getImageData(0, 0, w, h).data
+            var ink = function (px, py) {
+              return px >= 0 && py >= 0 && px < w && py < h && data[(py * w + px) * 4 + 3] > 128
+            }
+            var best = null
+            var step = Math.max(2, Math.round(size / 60))
+            for (var py = 0; py < h; py += step) {
+              for (var px = 0; px < w; px += step) {
+                if (!ink(px, py)) continue
+                var r = 0
+                while (r < size && ink(px + r, py) && ink(px - r, py) && ink(px, py + r) && ink(px, py - r)) r += step
+                // Prefer thick strokes, then the ones nearest the middle.
+                var score = r - Math.hypot(px - w / 2, py - h / 2) * 0.02
+                if (!best || score > best.s) best = { s: score, x: px, y: py, r: r }
+              }
+            }
+            if (!best) return fallback
+            return { x: x - w / 2 + best.x, y: y - h * 0.85 + best.y, r: best.r }
+          } catch (e) {
+            return fallback
+          }
         }
 
-        // Leaves once the app is actually mounted AND the intro has had its moment.
-        window.addEventListener('sw-app-ready', function () {
-          var waited = Date.now() - started
-          setTimeout(finish, Math.max(0, MIN_MS - waited))
-        })
+        function appReady() {
+          if (ready) return
+          ready = true
+          maybeDraw()
+        }
+        window.addEventListener('sw-app-ready', appReady)
+        // A bundle that never reports in still gets the show, just later.
+        setTimeout(appReady, 3000)
 
         // Any input skips it; the timeout keeps a broken bundle from trapping the page.
-        document.addEventListener('keydown', finish, { once: true })
-        boot.addEventListener('click', finish, { once: true })
-        setTimeout(finish, 6000)
+        function skip() {
+          draw()
+          skipped = true
+        }
+        document.addEventListener('keydown', skip, { once: true })
+        boot.addEventListener('click', skip, { once: true })
+        setTimeout(skip, 7000)
       })()
     </script>
 

@@ -1,17 +1,17 @@
-import jakubPhoto from './img/jakub-wasilewski.jpg'
-import shotClinic from './img/clinic-calendar.jpg'
-import shotTraining from './img/training-reports.jpg'
-import shotGame from './img/party-game.jpg'
-import shotChartScanner from './img/chart-scanner.jpg'
-import shotMkCycling from './img/mkcycling.jpg'
-import shotPixelBites from './img/pixel-bites.jpg'
-import shotRestaurantSystem from './img/restaurant-system.jpg'
-import shotBistro from './img/bistro.jpg'
-import shotIceCream from './img/lody.jpg'
-import shotPizza from './img/pizza.jpg'
-import shotSplitDeBill from './img/splitdebill.jpg'
-import shotExplorePoland from './img/explore-poland.jpg'
-import mikolajPhoto from './img/mikolaj-sitek.jpg'
+import jakubPhoto from './img/jakub-wasilewski.webp'
+import shotClinic from './img/clinic-calendar.webp'
+import shotTraining from './img/training-reports.webp'
+import shotGame from './img/party-game.webp'
+import shotChartScanner from './img/chart-scanner.webp'
+import shotMkCycling from './img/mkcycling.webp'
+import shotPixelBites from './img/pixel-bites.webp'
+import shotRestaurantSystem from './img/restaurant-system.webp'
+import shotBistro from './img/bistro.webp'
+import shotIceCream from './img/lody.webp'
+import shotPizza from './img/pizza.webp'
+import shotSplitDeBill from './img/splitdebill.webp'
+import shotExplorePoland from './img/explore-poland.webp'
+import mikolajPhoto from './img/mikolaj-sitek.webp'
 
 export type Lang = 'pl' | 'en'
 export type LS = Record<Lang, string>
@@ -30,11 +30,16 @@ export type Project = {
    * 'forSale' marks a finished product we can deploy for another client.
    */
   status?: 'private' | 'ongoing' | 'forSale'
-  color: string
   tagline: LS
   role: LS
   stack: string[]
   highlights: LS[]
+  /**
+   * What the project changed for the client or its users, in plain words.
+   * Add measured numbers here once they are known (hours saved, bookings,
+   * store rating) — never estimates dressed up as measurements.
+   */
+  results: LS[]
   about: LS
   liveUrl?: string
   repoUrl?: string
@@ -58,7 +63,6 @@ export const projects: Project[] = [
     category: 'web',
     year: '2026',
     image: '',
-    color: '#334155',
     status: 'private',
     tagline: {
       pl: 'Grafik pracy i flota pojazdów w jednym systemie, pisanym pod reguły firmy.',
@@ -80,6 +84,20 @@ export const projects: Project[] = [
         en: 'A mobile-first app with real-time updates and permissions split per role.',
       },
     ],
+    results: [
+      {
+        pl: 'Grafik i flota w jednym miejscu zamiast arkusza i osobnego rejestru pojazdów.',
+        en: 'Schedule and fleet in one place instead of a spreadsheet plus a separate vehicle register.',
+      },
+      {
+        pl: 'Dyspozycyjność zbierana od pracowników w aplikacji, a nie telefonicznie i na kartkach.',
+        en: 'Availability collected from staff in the app, not by phone and on paper.',
+      },
+      {
+        pl: 'Każdy widzi tylko to, co dotyczy jego roli — kierowca, dyspozytor, kadry.',
+        en: 'Everyone sees only what concerns their role — driver, dispatcher, HR.',
+      },
+    ],
     about: {
       pl: 'Wewnętrzny system dla firmy transportowej, w którym grafik pracy i zarządzanie flotą są jednym procesem, a nie dwoma osobnymi narzędziami. Zamiast uniwersalnego kalendarza aplikacja odwzorowuje reguły tej konkretnej firmy: sposób zbierania dyspozycyjności, zasady przydziału pojazdów, obieg zgłoszeń warsztatowych i rozliczanie czasu pracy. Projekt prywatny — podgląd i repozytorium pozostają niedostępne.',
       en: 'An internal system for a transport company where staffing and fleet management are one process rather than two separate tools. Instead of a generic calendar, the app encodes this company’s own rules: how availability is collected, how vehicles are assigned, how workshop tickets travel and how working time is settled. A private project — preview and repository stay closed.',
@@ -91,7 +109,6 @@ export const projects: Project[] = [
     category: 'mobile',
     year: '2026',
     image: shotClinic,
-    color: '#4f46e5',
     status: 'forSale',
     tagline: {
       pl: 'PWA prowadząca cały gabinet: rezerwacje, karnety, kartoteka i rozliczenia.',
@@ -113,6 +130,20 @@ export const projects: Project[] = [
         en: 'Authorization enforced by the database (RLS on every table), with a separate gate on financial reports and policies tested in pgTAP.',
       },
     ],
+    results: [
+      {
+        pl: 'Koniec z podwójnymi rezerwacjami — system nie pozwoli zapisać dwóch osób na ten sam termin.',
+        en: 'No more double bookings — the system will not put two people in the same slot.',
+      },
+      {
+        pl: 'Rozliczenia i statystyki liczone automatycznie, bez przepisywania do arkusza.',
+        en: 'Billing and statistics computed automatically, with no copying into a spreadsheet.',
+      },
+      {
+        pl: 'Przypomnienia push przed wizytą, które mają ograniczać nieobecności.',
+        en: 'Push reminders before each visit, meant to cut no-shows.',
+      },
+    ],
     about: {
       pl: 'Odpowiednik kalendarza chmurowego, ale z regułami napisanymi pod konkretny model działania gabinetu — i to te reguły są treścią projektu. Serie cykliczne, karnety z rozliczaniem zużycia, rozliczenia z firmą jako płatnikiem oraz przypomnienia push wysyłane funkcją brzegową. Schemat rozwijany przyrostowo przez 39 wersjonowanych migracji, a typy TypeScript generowane wprost z bazy, więc kontrakt między bazą a frontendem sprawdza kompilator.',
       en: 'A cloud-calendar equivalent, except the rules are written for one clinic’s way of working — and those rules are the substance of the project. Recurring series, passes with usage settlement, company-as-payer billing and push reminders sent from an edge function. The schema grew across 39 versioned migrations, with TypeScript types generated straight from the database, so the contract between database and front-end is checked by the compiler.',
@@ -124,7 +155,6 @@ export const projects: Project[] = [
     category: 'mobile',
     year: '2026',
     image: shotChartScanner,
-    color: '#0ea5e9',
     tagline: {
       pl: 'Zdjęcie wykresu z dowolnej platformy, a w kilka sekund analiza AI: trend, formacja i poziomy cenowe.',
       en: 'A photo of a chart from any platform, and seconds later an AI read: trend, pattern and price levels.',
@@ -145,6 +175,20 @@ export const projects: Project[] = [
         en: 'A community of shared analysis cards with content moderation, and a PRO subscription handled through RevenueCat and Google Play.',
       },
     ],
+    results: [
+      {
+        pl: 'Aplikacja opublikowana w Google Play, z działającą subskrypcją PRO.',
+        en: 'Published on Google Play, with a working PRO subscription.',
+      },
+      {
+        pl: 'Analiza wykresu w kilka sekund zamiast ręcznego rysowania linii i poziomów.',
+        en: 'A chart read in seconds instead of drawing lines and levels by hand.',
+      },
+      {
+        pl: 'Koszty AI pod kontrolą: limity i uprawnienia pilnowane po stronie serwera.',
+        en: 'AI costs kept in check: limits and permissions enforced on the server.',
+      },
+    ],
     about: {
       pl: 'Aplikacja mobilna dla inwestorów, opublikowana w Google Play. Użytkownik robi zdjęcie wykresu z dowolnego serwisu, a model Gemini rozpoznaje, co na nim widać, i zwraca analizę z poziomami cenowymi. Logika wrażliwa na koszty i uprawnienia działa w Cloud Functions, nie w aplikacji, a dostęp do danych w Firestore pilnują reguły bazy. Do publikacji przygotowaliśmy też stronę z polityką prywatności i regulaminem, której wymaga sklep.',
       en: 'A mobile app for investors, published on Google Play. The user photographs a chart from any service, and a Gemini model reads it and returns an analysis with price levels. Logic that touches costs and permissions runs in Cloud Functions rather than in the app, and access to Firestore data is guarded by database rules. For the release we also shipped the privacy policy and terms site the store requires.',
@@ -157,7 +201,6 @@ export const projects: Project[] = [
     category: 'web',
     year: '2026',
     image: shotRestaurantSystem,
-    color: '#b8862f',
     tagline: {
       pl: 'Elegancka strona restauracji z rezerwacją, w której gość sam wybiera stolik na planie sali.',
       en: 'An elegant restaurant site with bookings where guests pick their own table on the floor plan.',
@@ -178,6 +221,16 @@ export const projects: Project[] = [
         en: 'Private event enquiries, menu and gallery in one consistent style.',
       },
     ],
+    results: [
+      {
+        pl: 'Gość sam rezerwuje konkretny stolik, bez telefonu do restauracji.',
+        en: 'Guests book a specific table themselves, without calling the restaurant.',
+      },
+      {
+        pl: 'Obsługa ma wszystkie rezerwacje w jednym panelu, z podziałem na role.',
+        en: 'Staff get every booking in one panel, split by role.',
+      },
+    ],
     about: {
       pl: 'Strona restauracji fine dining połączona z rezerwacjami. Gość nie wypełnia formularza w ciemno, tylko widzi salę i wybiera konkretny stolik, a obsługa dostaje rezerwacje w swoim panelu. Dane o stolikach i rezerwacjach trafiają do Supabase przez funkcję brzegową.',
       en: 'A fine dining restaurant site wired to bookings. Guests do not fill in a blind form: they see the room and choose a specific table, while staff receive bookings in their own panel. Table and booking data reaches Supabase through an edge function.',
@@ -191,7 +244,6 @@ export const projects: Project[] = [
     category: 'web',
     year: '2026',
     image: shotTraining,
-    color: '#0891b2',
     status: 'forSale',
     tagline: {
       pl: 'Surowy eksport z systemu pomiarowego wchodzi, gotowy raport A4 wychodzi.',
@@ -213,6 +265,16 @@ export const projects: Project[] = [
         en: '532 tests over pure functions — in an analytics tool a bug does not show up as a crash but as a quiet, plausible-looking number.',
       },
     ],
+    results: [
+      {
+        pl: 'Raport, który trener składał wcześniej ręcznie w arkuszu, powstaje z eksportu automatycznie.',
+        en: 'The report a coach used to assemble by hand in a spreadsheet is generated from the export.',
+      },
+      {
+        pl: 'Niepewne dopasowania trafiają do człowieka, więc w raporcie nie ląduje zgadnięta liczba.',
+        en: 'Uncertain matches go to a person, so no guessed number ends up in the report.',
+      },
+    ],
     about: {
       pl: 'Narzędzie dla trenerów przygotowania motorycznego, które zastępuje raport składany wcześniej ręcznie w arkuszu. Obsługuje raport dzienny, tygodniowy, zestawienie kilku raportów, porównanie okresów i kartę zawodnika. Dokument jest tu danymi, nie widokiem: kartki mają trwałe identyfikatory, więc można je usuwać, przywracać i przestawiać przeciąganiem, a zapis odtwarza dokładnie ten układ. Wykresy rysowane własnym kodem SVG, żeby dokument wyglądał identycznie na ekranie i w druku.',
       en: 'A tool for strength and conditioning coaches, replacing a report previously assembled by hand in a spreadsheet. It covers daily and weekly reports, multi-report roll-ups, period comparisons and single-athlete cards. The document is data here, not a view: pages carry durable identifiers, so they can be removed, restored and reordered by dragging, and saving restores exactly that layout. Charts are drawn in hand-written SVG so the document looks identical on screen and in print.',
@@ -224,7 +286,6 @@ export const projects: Project[] = [
     category: 'web',
     year: '2026',
     image: '',
-    color: '#0f9d6a',
     status: 'private',
     tagline: {
       pl: 'Zlecenia, technicy w terenie i raport serwisowy podpisywany palcem na miejscu.',
@@ -246,6 +307,20 @@ export const projects: Project[] = [
         en: 'Built for weak coverage: a local in-browser database, push notifications and a real-time channel.',
       },
     ],
+    results: [
+      {
+        pl: 'Raport podpisany u klienta trafia od razu do systemu — bez papieru i przepisywania.',
+        en: 'A report signed at the client’s site goes straight into the system — no paper, no retyping.',
+      },
+      {
+        pl: 'Pełna historia każdego raportu: kto, co i kiedy zatwierdził.',
+        en: 'A full history of every report: who approved what, and when.',
+      },
+      {
+        pl: 'Aplikacja działa także przy słabym zasięgu w terenie.',
+        en: 'The app keeps working on weak coverage in the field.',
+      },
+    ],
     about: {
       pl: 'System dla firmy serwisującej urządzenia techniczne w terenie: zlecenia, przydział techników, statusy i priorytety, a na końcu podpisany raport z numerem i ścieżką akceptacji. Bezpieczeństwo jest tu wymaganiem, nie dodatkiem — aplikacja odmawia startu przy słabych sekretach, tokeny odświeżające są rotowane i trzymane w bazie, a dziennik audytu zapisuje wartość przed i po, obejmując także nieudane logowania. Każdy punkt z audytu ma własny test E2E.',
       en: 'A system for a company servicing technical equipment in the field: work orders, technician assignment, statuses and priorities, ending in a signed, numbered report with an approval path. Security is a requirement rather than an add-on — the app refuses to start on weak secrets, refresh tokens are rotated and stored in the database, and the audit log records before and after values, including failed logins. Every audit point has its own end-to-end test.',
@@ -257,7 +332,6 @@ export const projects: Project[] = [
     category: 'web',
     year: '2026',
     image: shotGame,
-    color: '#e11d48',
     status: 'forSale',
     tagline: {
       pl: 'Wieloosobowa gra przeglądarkowa typu „kto jest oszustem”, sześć trybów rozgrywki.',
@@ -279,6 +353,16 @@ export const projects: Project[] = [
         en: 'A dropped connection is a rule of the game, not a failure: an offline player gets a shortened turn, so one lost session does not stall the table.',
       },
     ],
+    results: [
+      {
+        pl: 'Rozgrywka toczy się dalej, nawet gdy ktoś przy stole straci połączenie.',
+        en: 'The game carries on even when someone at the table loses their connection.',
+      },
+      {
+        pl: 'Uruchamia się bez dodatkowej infrastruktury, więc wdrożenie dla nowego klienta jest tanie.',
+        en: 'It runs with no extra infrastructure, so deploying it for a new client is cheap.',
+      },
+    ],
     about: {
       pl: 'Projekt dowodowy tego, że potrafię napisać autorytatywny serwer stanu w czasie rzeczywistym, a nie tylko CRUD. Gracze dołączają kodem pokoju, dostają hasło (poza oszustem), na zmianę dają wskazówki i głosują. Sześć trybów, m.in. wersja z rysowaniem zamiast słów, wariant ze zwiększoną liczbą oszustów i tryb współpracy. Warstwa trwałości jest wymienna — Redis albo plik JSON za jednym interfejsem — więc ta sama aplikacja uruchamia się lokalnie bez żadnej infrastruktury.',
       en: 'A proof project for writing an authoritative real-time state server rather than another CRUD app. Players join with a room code, receive a password (except the impostor), take turns giving clues and vote. Six modes, including a drawing variant, a version with more impostors and a co-op mode. The persistence layer is swappable — Redis or a JSON file behind one interface — so the same app runs locally with no infrastructure at all.',
@@ -290,7 +374,6 @@ export const projects: Project[] = [
     category: 'commerce',
     year: '2026',
     image: img('1627542557169-5ed71c66ed85'),
-    color: '#d97706',
     status: 'ongoing',
     tagline: {
       pl: 'Katalog kursów, terminarz slotów i rezerwacje ze ścieżką potwierdzenia.',
@@ -312,6 +395,16 @@ export const projects: Project[] = [
         en: 'Reminders matched over a time window rather than at an exact hour — a delay or a process restart cannot skip a send.',
       },
     ],
+    results: [
+      {
+        pl: 'Autor prowadzi sprzedaż, terminy i kontakt z uczestnikami w jednym miejscu.',
+        en: 'The author runs sales, dates and participant contact in one place.',
+      },
+      {
+        pl: 'Przypomnienia nie przepadają po restarcie serwera.',
+        en: 'Reminders are not lost when the server restarts.',
+      },
+    ],
     about: {
       pl: 'Platforma pozwalająca sprzedawać własne kursy i zajęcia: katalog, terminarz dostępnych slotów, rezerwacje, panel administracyjny, komunikacja z uczestnikiem i przypomnienia. Model zbliżony do znanych platform kursowych, ale prowadzony przez jednego autora treści. Frontend działa jako PWA z service workerem i własną warstwą tłumaczeń. Projekt jest w trakcie realizacji — podgląd udostępnimy po wdrożeniu.',
       en: 'A platform for selling your own courses and classes: catalogue, calendar of available slots, bookings, an admin panel, participant messaging and reminders. The model is close to the familiar course platforms, but run by a single content author. The front-end is a PWA with a service worker and its own translation layer. The project is still in progress — preview once it ships.',
@@ -323,7 +416,6 @@ export const projects: Project[] = [
     category: 'landing',
     year: '2025',
     image: img('1539278383962-a7774385fa02'),
-    color: '#7c3aed',
     status: 'forSale',
     tagline: {
       pl: 'Strona lokalu i rezerwacje: stolik, wydarzenie albo wynajem całego lokalu.',
@@ -345,6 +437,20 @@ export const projects: Project[] = [
         en: 'A full security cycle: a self-run audit (23 findings, 5 critical), the fixes, and 35 end-to-end tests that keep them from coming back.',
       },
     ],
+    results: [
+      {
+        pl: 'Stoliki, wydarzenia i wynajem sali w jednym kalendarzu, bez kolizji terminów.',
+        en: 'Tables, events and venue hire in one calendar, with no clashing slots.',
+      },
+      {
+        pl: 'Godziny otwarcia zmieniane w jednym miejscu — strona i rezerwacje zawsze się zgadzają.',
+        en: 'Opening hours changed in one place — the site and the bookings always agree.',
+      },
+      {
+        pl: 'Luki wykryte w audycie bezpieczeństwa naprawione i pilnowane testami.',
+        en: 'Security audit findings fixed and guarded by tests.',
+      },
+    ],
     about: {
       pl: 'Strona restauracji połączona z systemem rezerwacji, w którym obsługa prowadzi wszystko z panelu: stoliki i sale, menu z kategoriami, godziny otwarcia, potwierdzenia i raporty dzienne. Panel jest osobną aplikacją instalowalną na telefonie, z wymuszoną aktualizacją pokazywaną tylko obsłudze — zainstalowana PWA nie ma przycisku odświeżania, więc administrator, który odłoży aktualizację, potrafi utknąć na starej wersji bez drogi wyjścia.',
       en: 'A restaurant site wired to a booking system where staff run everything from one panel: tables and rooms, a categorised menu, opening hours, confirmations and daily reports. The panel is a separate app installable on a phone, with a forced update prompt shown only to staff — an installed PWA has no refresh button, so an admin who postpones an update can get stuck on an old version with no way out.',
@@ -356,7 +462,6 @@ export const projects: Project[] = [
     category: 'landing',
     year: '2026',
     image: shotMkCycling,
-    color: '#84cc16',
     tagline: {
       pl: 'Strona dla trenera kolarstwa szosowego, która ma zamieniać odwiedzających w podopiecznych.',
       en: 'A site for a road cycling coach, built to turn visitors into athletes on his plan.',
@@ -377,6 +482,16 @@ export const projects: Project[] = [
         en: 'Analytics in Consent Mode: nothing is measured until the visitor accepts cookies.',
       },
     ],
+    results: [
+      {
+        pl: 'Strona prowadzi odwiedzającego prosto do kontaktu w sprawie planu treningowego.',
+        en: 'The site leads visitors straight to getting in touch about a training plan.',
+      },
+      {
+        pl: 'Przygotowana pod lokalne wyszukiwanie w Google i zgodna z RODO.',
+        en: 'Set up for local Google search and GDPR-compliant.',
+      },
+    ],
     about: {
       pl: 'Strona wizytówka trenera kolarstwa szosowego, który układa indywidualne plany treningowe. Ton i wygląd są podporządkowane jednemu celowi: przekonać kolarza amatora, że trening pod jego pracę i rodzinę da lepsze wyniki niż kopiowanie gotowych planów. Pod spodem zadbaliśmy o rzeczy, których klient nie widzi, a które decydują o wynikach w Google: szybkie ładowanie głównego zdjęcia, dane strukturalne dla lokalnego wyszukiwania i zgodność z RODO.',
       en: 'A showcase site for a road cycling coach who writes individual training plans. The tone and look serve one goal: convincing an amateur cyclist that training built around their job and family beats copying ready-made plans. Underneath, we took care of what the client never sees but what decides Google rankings: a fast-loading hero image, structured data for local search and GDPR compliance.',
@@ -389,7 +504,6 @@ export const projects: Project[] = [
     category: 'landing',
     year: '2026',
     image: shotPixelBites,
-    color: '#ec4899',
     tagline: {
       pl: 'Strona burgerowni zamieniona w grę retro: pixel art, neon i historia opowiadana przewijaniem.',
       en: 'A burger joint’s site turned into a retro game: pixel art, neon and a story told by scrolling.',
@@ -410,6 +524,16 @@ export const projects: Project[] = [
         en: 'An interactive menu, events, a location map, a loyalty pass and FAQ, each section its own component.',
       },
     ],
+    results: [
+      {
+        pl: 'Marka lokalu pokazana przez interakcję, którą gość zapamięta, a nie przez kolejną galerię.',
+        en: 'The venue’s brand shown through an interaction guests remember, not another gallery.',
+      },
+      {
+        pl: 'Menu, wydarzenia, dojazd i FAQ w jednym miejscu.',
+        en: 'Menu, events, directions and FAQ in one place.',
+      },
+    ],
     about: {
       pl: 'Strona dla lokalu, który chce być zapamiętany. Zamiast klasycznego szablonu z galerią potraw odwiedzający przechodzi przez grę: wchodzi do restauracji, zagląda do kuchni i składa burgera warstwa po warstwie. Projekt pokazuje, jak daleko może pójść strona gastronomiczna, kiedy marka ma wyraźny charakter.',
       en: 'A site for a venue that wants to be remembered. Instead of the usual template with a food gallery, the visitor plays through it: walks into the restaurant, peeks into the kitchen and stacks a burger layer by layer. It shows how far a restaurant site can go when the brand has a clear character.',
@@ -423,7 +547,6 @@ export const projects: Project[] = [
     category: 'landing',
     year: '2026',
     image: shotBistro,
-    color: '#3f7d58',
     tagline: {
       pl: 'Jasna, apetyczna wizytówka lokalu: menu, miejsce, warsztaty i dojazd na jednej stronie.',
       en: 'A bright, appetising venue site: menu, space, workshops and directions on one page.',
@@ -444,6 +567,16 @@ export const projects: Project[] = [
         en: 'A ready template for a quick launch for a café, bistro or bakery.',
       },
     ],
+    results: [
+      {
+        pl: 'Szablon gotowy do wdrożenia dla nowego lokalu w kilka dni.',
+        en: 'A template ready to launch for a new venue within days.',
+      },
+      {
+        pl: 'Gość od razu znajduje menu, godziny i dojazd.',
+        en: 'Guests find the menu, hours and directions right away.',
+      },
+    ],
     about: {
       pl: 'Strona dla małego lokalu gastronomicznego, który potrzebuje przede wszystkim dobrego pierwszego wrażenia i szybkiej odpowiedzi na pytania gościa: co podają, jak tam jest i jak dojechać. Tekst, zdjęcia i dane kontaktowe łatwo podmienić, więc stronę można wdrożyć dla nowego lokalu w kilka dni.',
       en: 'A site for a small food venue that above all needs a good first impression and quick answers to a guest’s questions: what they serve, what the place feels like and how to get there. Copy, photos and contact details are easy to swap, so the site can launch for a new venue within days.',
@@ -457,7 +590,6 @@ export const projects: Project[] = [
     category: 'landing',
     year: '2026',
     image: shotIceCream,
-    color: '#c8a26b',
     tagline: {
       pl: 'Strona lodziarni, na której lód w rożku jest trójwymiarowym modelem poruszającym się razem z przewijaniem.',
       en: 'An ice cream parlour site where the cone is a 3D model that moves as you scroll.',
@@ -478,6 +610,16 @@ export const projects: Project[] = [
         en: 'A flavour collection, a quality section and customer reviews in an elegant dark style.',
       },
     ],
+    results: [
+      {
+        pl: 'Produkt w centrum uwagi — lód jako interaktywny model zamiast zdjęcia.',
+        en: 'The product takes centre stage — the cone as an interactive model instead of a photo.',
+      },
+      {
+        pl: 'Lekka strona bez frameworka, szybka mimo animacji 3D.',
+        en: 'A light, framework-free site that stays fast despite the 3D.',
+      },
+    ],
     about: {
       pl: 'Wizytówka rzemieślniczej lodziarni, w której produkt jest bohaterem strony dosłownie: trójwymiarowy lód obraca się i przesuwa w miarę przewijania, a treść układa się wokół niego. Lekki stos bez frameworka, dzięki czemu cała moc idzie w animację, a nie w narzut biblioteki.',
       en: 'A showcase for an artisan ice cream parlour where the product is literally the star of the page: a 3D cone turns and moves as you scroll, with the content arranged around it. A light, framework-free stack, so the budget goes into the animation rather than library overhead.',
@@ -490,7 +632,6 @@ export const projects: Project[] = [
     category: 'landing',
     year: '2026',
     image: shotPizza,
-    color: '#dc2626',
     tagline: {
       pl: 'Mocna, ciemna strona pizzerii z typografią, która krzyczy tak głośno jak piec opalany drewnem.',
       en: 'A bold, dark pizzeria site with typography as loud as a wood-fired oven.',
@@ -511,6 +652,16 @@ export const projects: Project[] = [
         en: 'Ready-made previews for sharing on social media (Open Graph).',
       },
     ],
+    results: [
+      {
+        pl: 'Jeden jasny cel strony: rezerwacja stolika, dostępna z każdego miejsca.',
+        en: 'One clear goal for the site: a table booking, reachable from anywhere.',
+      },
+      {
+        pl: 'Linki udostępniane w mediach społecznościowych mają gotowy podgląd.',
+        en: 'Links shared on social media come with a ready preview.',
+      },
+    ],
     about: {
       pl: 'Strona dla pizzerii neapolitańskiej, która chce wyróżnić się charakterem, a nie kolejnym zdjęciem margherity na białym tle. Stylistyka ognia i ciemnych barw, krótkie teksty i jeden główny cel: rezerwacja stolika.',
       en: 'A site for a Neapolitan pizzeria that wants to stand out through character rather than yet another margherita on a white background. A fire-and-dark palette, short copy and one main goal: a table booking.',
@@ -523,7 +674,6 @@ export const projects: Project[] = [
     category: 'mobile',
     year: '2026',
     image: shotSplitDeBill,
-    color: '#84cc16',
     status: 'ongoing',
     tagline: {
       pl: 'Zdjęcie paragonu, rozpoznane pozycje i rachunek podzielony między znajomych bez liczenia w głowie.',
@@ -545,6 +695,16 @@ export const projects: Project[] = [
         en: 'Three layers of one product: an API, a mobile app and a web panel.',
       },
     ],
+    results: [
+      {
+        pl: 'Rachunek dzielony ze zdjęcia paragonu, bez przepisywania pozycji.',
+        en: 'A bill split from a photo of the receipt, with no retyping of items.',
+      },
+      {
+        pl: 'Saldo grupy liczone na bieżąco, także przy kilku walutach.',
+        en: 'The group balance kept up to date, across several currencies too.',
+      },
+    ],
     about: {
       pl: 'Aplikacja dla znajomych, którzy razem wyjeżdżają albo wychodzą na kolację i nie chcą potem liczyć, kto komu ile oddaje. Wystarczy zrobić zdjęcie paragonu, przypisać pozycje osobom, a aplikacja pilnuje salda i podpowiada, kto powinien zapłacić następny. Projekt jest w trakcie realizacji — podgląd udostępnimy po wdrożeniu.',
       en: 'An app for friends who travel or eat out together and do not want to work out afterwards who owes whom. Photograph the receipt, assign items to people, and the app keeps the balance and suggests who should pay next. The project is still in progress — preview once it ships.',
@@ -556,7 +716,6 @@ export const projects: Project[] = [
     category: 'web',
     year: '2026',
     image: shotExplorePoland,
-    color: '#c2410c',
     status: 'ongoing',
     tagline: {
       pl: 'Mapa atrakcji, planer tras i punkty za odwiedzone miejsca potwierdzone przez GPS.',
@@ -578,6 +737,16 @@ export const projects: Project[] = [
         en: 'Gamification: points, user reputation and AI-generated attraction descriptions.',
       },
     ],
+    results: [
+      {
+        pl: 'Zwiedzanie jako gra: trasa, wizyta potwierdzona przez GPS i punkty.',
+        en: 'Sightseeing as a game: a route, a GPS-confirmed visit and points.',
+      },
+      {
+        pl: 'Atrakcje w okolicy wyszukiwane po lokalizacji użytkownika.',
+        en: 'Nearby attractions found from the user’s location.',
+      },
+    ],
     about: {
       pl: 'Aplikacja do odkrywania atrakcji turystycznych w Polsce, która zamienia zwiedzanie w grę: zaplanuj trasę, odwiedź miejsce, potwierdź obecność telefonem i zbieraj punkty. Projekt jest w trakcie realizacji — podgląd udostępnimy po wdrożeniu.',
       en: 'An app for discovering tourist attractions in Poland that turns sightseeing into a game: plan a route, visit a place, confirm you were there with your phone and collect points. The project is still in progress — preview once it ships.',
@@ -589,11 +758,14 @@ export const projects: Project[] = [
 
 export const t = {
   brand: { pl: 'SW Development', en: 'SW Development' },
-  role: { pl: 'Studio: 2 developerów + analityk biznesowy', en: 'Studio: 2 developers + business analyst' },
+  role: { pl: 'Aplikacje web, mobile i systemy dla firm', en: 'Web, mobile & business systems' },
   nav: {
-    work: { pl: 'Prace', en: 'Work' },
-    about: { pl: 'O nas', en: 'About us' },
+    work: { pl: 'Realizacje', en: 'Work' },
+    about: { pl: 'Zespół', en: 'Team' },
+    process: { pl: 'Proces', en: 'Process' },
+    stack: { pl: 'Konfigurator', en: 'Builder' },
     testimonials: { pl: 'Opinie', en: 'Reviews' },
+    faq: { pl: 'FAQ', en: 'FAQ' },
     contact: { pl: 'Kontakt', en: 'Contact' },
   },
   available: { pl: 'Dostępni do współpracy', en: 'Available for work' },
@@ -601,13 +773,30 @@ export const t = {
     pl: 'Projektujemy i budujemy szybkie, dostępne produkty cyfrowe.',
     en: 'We design and build fast, accessible digital products.',
   },
+  /** Hero headline, split so the accent line can draw under one word. */
+  heroHeadline: {
+    pl: { before: 'Oprogramowanie, które', mark: 'pracuje', after: 'na wynik Twojej firmy.' },
+    en: { before: 'Software that', mark: 'works', after: 'for your business.' },
+  },
+  trustProjects: { pl: 'realizacji', en: 'projects' },
+  trustLive: { pl: 'na żywo', en: 'live' },
+  trustStore: { pl: 'Aplikacja w Google Play', en: 'An app on Google Play' },
+  trustTeam: { pl: '3 osoby, jeden kontakt', en: '3 people, one point of contact' },
+  sectionWork: { pl: 'Realizacje', en: 'Work' },
+  sectionAbout: { pl: 'Zespół', en: 'Team' },
+  sectionTestimonials: { pl: 'Opinie', en: 'Reviews' },
+  sectionContact: { pl: 'Kontakt', en: 'Contact' },
+  replyPromise: { pl: 'Odpowiadamy w ciągu 24 godzin', en: 'We reply within 24 hours' },
+  footerTagline: {
+    pl: 'Strony, aplikacje web i mobilne — od pierwszej rozmowy po wdrożenie.',
+    en: 'Websites, web and mobile apps — from the first conversation to launch.',
+  },
   heroBody: {
-    pl: 'SW Development to trzyosobowe studio: dwoje developerów oraz analityk biznesowy, który zbiera kontekst aplikacji i wspiera proces. Tworzymy aplikacje web, produkty mobilne i strony — od pierwszej rozmowy po bezpieczne wdrożenie.',
-    en: 'SW Development is a three-person studio: two developers and a business analyst who gathers app context and supports the process. We create web apps, mobile products, and websites — from the first conversation to a secure launch.',
+    pl: 'Projektujemy i wdrażamy aplikacje webowe, mobilne oraz systemy wewnętrzne dla firm. Zaczynamy od analizy procesów i wymagań, kończymy na stabilnym wdrożeniu i utrzymaniu. Za cały projekt odpowiada jeden zespół — analityk biznesowy i programiści — bez pośredników.',
+    en: 'We design and deliver web and mobile applications and internal systems for businesses. We start by analysing your processes and requirements and finish with a stable launch and ongoing support. One team — a business analyst and engineers — owns the whole project, with no middlemen.',
   },
   cta: { pl: 'Zobacz prace', en: 'View work' },
   ctaContact: { pl: 'Napisz do nas', en: 'Get in touch' },
-  downloadCv: { pl: 'Pobierz CV', en: 'Download CV' },
   workTitle: { pl: 'Wybrane realizacje', en: 'Selected work' },
   workCount: { pl: 'projektów', en: 'projects' },
   caseStudy: { pl: 'Case study', en: 'Case study' },
@@ -621,11 +810,6 @@ export const t = {
   statusPrivate: { pl: 'Prywatny SaaS', en: 'Private SaaS' },
   statusOngoing: { pl: 'W realizacji', en: 'In progress' },
   statusForSale: { pl: 'Możliwa sprzedaż', en: 'For sale' },
-  /** Studio motto, repeated on every face of the flipping business card. */
-  motto: {
-    pl: 'Zamieniamy szalone pomysły w działające aplikacje.',
-    en: 'We turn your craziest ideas into real applications.',
-  },
   forSaleNote: {
     pl: 'Gotowy produkt — możemy wdrożyć go u Ciebie i dopasować do Twoich reguł.',
     en: 'A finished product — we can deploy it for you and fit it to your rules.',
@@ -647,13 +831,9 @@ export const t = {
   yearLabel: { pl: 'Rok', en: 'Year' },
   stackLabel: { pl: 'Technologie', en: 'Stack' },
   highlightsLabel: { pl: 'Czym się wyróżnia', en: 'What makes it stand out' },
+  resultsLabel: { pl: 'Efekt dla klienta', en: 'What it changed' },
   aboutLabel: { pl: 'O projekcie', en: 'About the project' },
   contactTitle: { pl: 'Zbudujmy coś razem', en: 'Let’s build something together' },
-  contactBody: {
-    pl: 'Szukasz zespołu do zaprojektowania lub zbudowania produktu? Chętnie porozmawiamy.',
-    en: 'Looking for a team to design or build a product? We’d love to talk.',
-  },
-  email: { pl: 'Napisz do nas', en: 'Send a message' },
   formTitle: { pl: 'Napisz do nas', en: 'Send us a message' },
   formBody: {
     pl: 'Odpowiadamy zwykle w ciągu jednego dnia roboczego.',
@@ -688,12 +868,113 @@ export const t = {
     pl: 'W SW Development działamy jako trzyosobowe studio: dwoje developerów oraz analityk biznesowy. Łączymy projektowanie, kodowanie i sprawne zbieranie kontekstu aplikacji, aby interfejsy nie tylko dobrze wyglądały, ale też działały bezbłędnie.',
     en: 'At SW Development we work as a three-person studio: two developers and a business analyst. We combine design, code, and efficient application discovery so interfaces not only look good, but work flawlessly.'
   },
-  testimonialsTitle: { pl: 'Opinie', en: 'Testimonials' },
+  sectionFaq: { pl: 'FAQ', en: 'FAQ' },
+  faqTitle: { pl: 'Zapytaj nas', en: 'Ask us' },
+  faqBody: {
+    pl: 'Na każde pytanie odpowiada osoba, która się tym u nas zajmuje. Jeśli Twojego tu nie ma — zadaj je jej wprost.',
+    en: 'Each question is answered by the person who handles it here. If yours is missing, ask them directly.',
+  },
+  testimonialsTitle: { pl: 'Na piśmie', en: 'In writing' },
   testimonialsBody: {
-    pl: 'Mieliśmy przyjemność współpracować z niesamowitymi ludźmi i zespołami. Oto co niektórzy z nich mają do powiedzenia.',
-    en: 'We’ve had the pleasure of working with some amazing people and teams. Here’s what a few of them have to say.'
+    pl: 'Referencje od firm, dla których budowaliśmy — każda o jednym wdrożeniu: jak było przed i jak jest teraz.',
+    en: 'References from businesses we built for — each about one launch: how things were before, and how they are now.'
   },
 } as const
+
+
+/* ------------------------------------------------------------------- FAQ */
+
+// ── Edit the questions here. Each belongs to a stage of working together, and
+//    the FAQ shows them on that axis. Answers stay a sentence or two and
+//    promise nothing not yet agreed: prices, warranties and IP terms are
+//    settled per contract. The two marked NEW need the owners' review. ────────
+export type FaqStage = 'before' | 'during' | 'after'
+
+export const faqStages: { key: FaqStage; label: LS }[] = [
+  { key: 'before', label: { pl: 'Przed startem', en: 'Before we start' } },
+  { key: 'during', label: { pl: 'W trakcie', en: 'While we build' } },
+  { key: 'after', label: { pl: 'Po wdrożeniu', en: 'After launch' } },
+]
+
+/** Who answers: Mikołaj (design), Jakub (development & security), Wojciech (client contact). */
+export type FaqAuthor = 'mikolaj' | 'jakub' | 'wojciech'
+
+export const faq: { q: LS; a: LS; stage: FaqStage; by: FaqAuthor }[] = [
+  {
+    stage: 'before',
+    by: 'wojciech',
+    q: { pl: 'Ile kosztuje aplikacja?', en: 'How much does an app cost?' },
+    a: {
+      pl: 'Wycenę przygotowujemy po bezpłatnej rozmowie, na podstawie spisanych wymagań — nie z cennika.',
+      en: 'We quote after a free first call, from written requirements — not from a price list.',
+    },
+  },
+  {
+    stage: 'before',
+    by: 'wojciech',
+    q: { pl: 'Czy podpisujecie NDA?', en: 'Do you sign NDAs?' },
+    a: {
+      pl: 'Tak, jeśli projekt tego wymaga — część naszych realizacji to poufne systemy wewnętrzne firm.',
+      en: 'Yes, when a project calls for it — some of our work is confidential internal company systems.',
+    },
+  },
+  {
+    stage: 'before',
+    by: 'jakub',
+    q: { pl: 'Do kogo należy kod?', en: 'Who owns the code?' },
+    a: {
+      pl: 'Przekazanie kodu, dokumentacji i praw zapisujemy w umowie, zanim zaczniemy prace.',
+      en: 'The handover of code, documentation and rights is written into the contract before work starts.',
+    },
+  },
+  {
+    stage: 'during',
+    by: 'wojciech',
+    q: { pl: 'Ile trwa realizacja?', en: 'How long does it take?' },
+    a: {
+      pl: 'Strona to zwykle kilka tygodni, aplikacja z panelem — kilka miesięcy. Harmonogram ustalamy po analizie.',
+      en: 'A site usually takes a few weeks, an app with a panel a few months. We set the schedule after analysis.',
+    },
+  },
+  {
+    stage: 'during',
+    by: 'mikolaj',
+    q: { pl: 'Jak wygląda współpraca?', en: 'What does working together look like?' },
+    a: {
+      pl: 'Analiza, makiety do akceptacji, wdrożenie etapami z pokazami postępu. Przez cały czas jedna osoba kontaktowa.',
+      en: 'Analysis, mock-ups for approval, delivery in stages with progress demos. One point of contact throughout.',
+    },
+  },
+  {
+    // NEW — needs the owners' review
+    stage: 'during',
+    by: 'mikolaj',
+    q: { pl: 'Czy mogę zmienić zakres w trakcie?', en: 'Can I change the scope midway?' },
+    a: {
+      pl: 'Tak. Każdą zmianę najpierw omawiamy i wyceniamy, a do prac wchodzi dopiero po Twojej akceptacji.',
+      en: 'Yes. Every change is discussed and quoted first, and only goes into the work once you approve it.',
+    },
+  },
+  {
+    stage: 'after',
+    by: 'jakub',
+    q: { pl: 'Co po wdrożeniu?', en: 'What happens after launch?' },
+    a: {
+      pl: 'Możemy dalej utrzymywać i rozwijać aplikację. Zakres opieki ustalamy osobno, pod Twoje potrzeby.',
+      en: 'We can keep maintaining and developing the app. The scope of support is agreed separately, to fit your needs.',
+    },
+  },
+  {
+    // NEW — needs the owners' review
+    stage: 'after',
+    by: 'jakub',
+    q: { pl: 'Co, jeśli coś przestanie działać?', en: 'What if something stops working?' },
+    a: {
+      pl: 'Zgłoszenie trafia do tej samej osoby, która prowadziła Twój projekt. Tryb i czas reakcji zapisujemy w umowie o opiekę.',
+      en: 'You report it to the same person you worked with on the project. How and how fast we respond is set in the support contract.',
+    },
+  },
+]
 
 /* ---------------------------------------------------------- Services / Process */
 
@@ -868,39 +1149,133 @@ export const processSteps: ProcessStep[] = [
 
 /* ------------------------------------------------------ Testimonials */
 
+// ── Reference letters, one per client. `before` and `after` restate what
+//    each project changed, from its own description and results above; the
+//    quote is a DRAFT written from the same facts. Send each letter to that
+//    client, let them change the words, then set `approved: true` and add the
+//    name they agree to. Unapproved letters show while developing (with a
+//    "Szkic" stamp) and never in the public build; with none approved the
+//    section, its nav link and its number disappear. ──────────────────────────
 export type Testimonial = {
-  name: string;
-  role: LS;
-  text: LS;
-  avatar: string;
+  /** The project from `projects` this row is about */
+  projectId: string
+  /** The kind of business, shown instead of a name */
+  sector: LS
+  before: LS
+  after: LS
+  /** The client’s own words: the body of the letter */
+  quote: LS
+  /** Who is speaking, as the client wants to be described */
+  role: LS
+  /** Name as the client agrees to show it (e.g. "Marta K."); empty keeps it to the role */
+  name?: string
+  approved: boolean
 }
 
 export const testimonials: Testimonial[] = [
   {
-    name: 'Anna Nowak',
-    role: { pl: 'CEO, TechFlow', en: 'CEO, TechFlow' },
-    text: { 
-      pl: 'Współpraca z SW Development to czysta przyjemność. Doskonale zrozumieli nasze potrzeby i dostarczyli produkt, który zachwycił naszych użytkowników. Interfejs jest teraz niesamowicie intuicyjny.',
-      en: 'Working with SW Development was a pure pleasure. They perfectly understood our needs and delivered a product that delighted our users. The interface is now incredibly intuitive.'
+    projectId: 'clinic-calendar',
+    sector: { pl: 'Gabinet', en: 'Clinic' },
+    before: {
+      pl: 'Grafik, karnety i rozliczenia z firmą w osobnych miejscach, a statystyki przepisywane do arkusza.',
+      en: 'Schedule, passes and company billing kept in separate places, statistics retyped into a spreadsheet.',
     },
-    avatar: img('1494790108377-be9c29b29330', 200, 200)
+    after: {
+      pl: 'Jedna aplikacja: podwójna rezerwacja jest niemożliwa, rozliczenia liczą się same, a przed wizytą wychodzi przypomnienie.',
+      en: 'One app: double bookings are impossible, billing adds itself up, and a reminder goes out before each visit.',
+    },
+    quote: {
+      pl: 'Grafik, karnety i rozliczenia z firmą były wcześniej w trzech miejscach. Teraz rano otwieram jedną aplikację na telefonie i widzę cały dzień, a pacjenci sami dostają przypomnienia.',
+      en: 'The schedule, passes and company billing used to live in three places. Now I open one app on my phone in the morning and see the whole day, and patients get their reminders on their own.',
+    },
+    role: { pl: 'Właścicielka gabinetu', en: 'Clinic owner' },
+    approved: false,
   },
   {
-    name: 'Jan Kowalski',
-    role: { pl: 'Product Manager, Innovate', en: 'Product Manager, Innovate' },
-    text: { 
-      pl: 'Najlepszy proces design-to-code z jakim miałem do czynienia. Aplikacja wygląda i działa dokładnie tak, jak w projekcie, a wydajność na urządzeniach mobilnych przerosła moje oczekiwania.',
-      en: 'The best design-to-code process I have ever experienced. The app looks and works exactly like the design, and mobile performance exceeded my expectations.'
+    projectId: 'dls',
+    sector: { pl: 'Transport', en: 'Transport' },
+    before: {
+      pl: 'Grafik w arkuszu, pojazdy w osobnym rejestrze, dyspozycyjność zbierana telefonicznie i na kartkach.',
+      en: 'Schedule in a spreadsheet, vehicles in a separate register, availability collected by phone and on paper.',
     },
-    avatar: img('1599566150163-29194dcaad36', 200, 200)
+    after: {
+      pl: 'Grafik i flota w jednym systemie, dyspozycyjność zgłaszana w aplikacji, a każdy widzi tylko to, co dotyczy jego roli.',
+      en: 'Schedule and fleet in one system, availability submitted in the app, and everyone sees only what concerns their role.',
+    },
+    quote: {
+      pl: 'Nikt nie kazał nam zmieniać sposobu pracy pod program. Najpierw rozpisali nasze zasady przydziału aut i zbierania dyspozycyjności, dopiero potem zaczęli pisać kod.',
+      en: 'Nobody asked us to change how we work to suit the software. They wrote down our rules for assigning vehicles and collecting availability first, and only then started coding.',
+    },
+    role: { pl: 'Kierownik floty', en: 'Fleet manager' },
+    approved: false,
   },
   {
-    name: 'Sarah Smith',
-    role: { pl: 'Założycielka, Atelier', en: 'Founder, Atelier' },
-    text: { 
-      pl: 'Zmysł estetyczny zespołu połączony z umiejętnościami technicznymi to rzadkość. Nasz sklep internetowy nie tylko pięknie wygląda, ale też konwertuje zauważalnie lepiej niż wcześniej.',
-      en: 'The team’s aesthetic sense combined with technical skills is a rarity. Our online store not only looks beautiful but also converts noticeably better than before.'
+    projectId: 'training-reports',
+    sector: { pl: 'Sport', en: 'Sport' },
+    before: {
+      pl: 'Raport dla zawodnika składany ręcznie w arkuszu z surowego eksportu systemu pomiarowego.',
+      en: 'Each athlete report put together by hand in a spreadsheet from the measuring system’s raw export.',
     },
-    avatar: img('1438761681033-6461ffad8d80', 200, 200)
-  }
+    after: {
+      pl: 'Eksport wchodzi, gotowy raport A4 wychodzi — a niepewne dopasowania trafiają do człowieka, nie do raportu.',
+      en: 'The export goes in, a finished A4 report comes out — and uncertain matches go to a person, not into the report.',
+    },
+    quote: {
+      pl: 'Raport tygodniowy składałem w arkuszu przez pół wieczoru. Teraz wrzucam eksport z systemu pomiarowego i po chwili mam gotowe A4 do wysłania zawodnikowi.',
+      en: 'I used to spend half an evening putting the weekly report together in a spreadsheet. Now I drop in the export from the measuring system and a finished A4 page is ready to send.',
+    },
+    role: { pl: 'Trener przygotowania motorycznego', en: 'Strength and conditioning coach' },
+    approved: false,
+  },
+  {
+    projectId: 'service-reports',
+    sector: { pl: 'Serwis w terenie', en: 'Field service' },
+    before: {
+      pl: 'Papierowy raport podpisany u klienta, a potem przepisywany w biurze.',
+      en: 'A paper report signed at the customer’s site, then retyped at the office.',
+    },
+    after: {
+      pl: 'Raport podpisany palcem na miejscu od razu trafia do systemu, z pełną historią akceptacji — także przy słabym zasięgu.',
+      en: 'The report, signed with a finger on site, goes straight into the system with its full approval history — even on a weak signal.',
+    },
+    quote: {
+      pl: 'Technik kończy zlecenie, klient podpisuje raport palcem na tablecie i dokument od razu jest w systemie. Skończyło się przepisywanie kartek w biurze.',
+      en: 'The technician finishes the job, the customer signs the report with a finger on the tablet and it is in the system straight away. No more retyping paper forms at the office.',
+    },
+    role: { pl: 'Koordynator serwisu', en: 'Service coordinator' },
+    approved: false,
+  },
+  {
+    projectId: 'restaurant-booking',
+    sector: { pl: 'Restauracja', en: 'Restaurant' },
+    before: {
+      pl: 'Stoliki, wydarzenia i wynajem sali w osobnych kalendarzach, a godziny otwarcia do poprawiania w kilku miejscach.',
+      en: 'Tables, events and room hire in separate calendars, opening hours to fix in several places.',
+    },
+    after: {
+      pl: 'Wszystko w jednym kalendarzu bez kolizji terminów, a godziny zmienione raz zgadzają się na stronie i w rezerwacjach.',
+      en: 'Everything in one calendar with no clashing bookings, and hours changed once match on the site and in bookings.',
+    },
+    quote: {
+      pl: 'Stoliki, sale i wynajem całego lokalu prowadzimy z jednego panelu na telefonie. Goście rezerwują sami, a rano widzimy raport z całego dnia.',
+      en: 'Tables, rooms and whole-venue hire all run from one panel on the phone. Guests book on their own, and each morning we see the report for the day.',
+    },
+    role: { pl: 'Manager restauracji', en: 'Restaurant manager' },
+    approved: false,
+  },
 ]
+
+/** What the page shows: approved letters, plus drafts while developing. */
+export const shownTestimonials = testimonials.filter((q) => q.approved || import.meta.env.DEV)
+
+/* ---------------------------------------------------------- Section order */
+
+export type SectionKey = 'work' | 'about' | 'process' | 'stack' | 'testimonials' | 'faq' | 'contact'
+
+/** The page's sections in order; the one place to reorder or renumber. */
+export const sectionKeys = (['work', 'about', 'process', 'stack', 'testimonials', 'faq', 'contact'] as SectionKey[]).filter(
+  (k) => k !== 'testimonials' || shownTestimonials.length > 0
+)
+
+/** Every section's number, shown in its header. */
+export const sectionNumbers = Object.fromEntries(sectionKeys.map((k, i) => [k, i + 1])) as Record<SectionKey, number>
